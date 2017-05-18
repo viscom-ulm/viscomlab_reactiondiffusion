@@ -92,6 +92,12 @@ namespace viscom {
 
     void ApplicationNodeImplementation::UpdateFrame(double currentTime, double)
     {
+        if (currentLocalIterationCount_ < currentGlobalIterationCount_) {
+            auto iterations = glm::max(currentGlobalIterationCount_ - currentLocalIterationCount_, MAX_FRAME_ITERATIONS);
+            for (std::uint64_t i = 0; i < iterations; ++i) {
+            }
+            currentLocalIterationCount_ += iterations;
+        }
         triangleModelMatrix_ = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 0.0f, 0.0f)), static_cast<float>(currentTime), glm::vec3(0.0f, 1.0f, 0.0f));
         teapotModelMatrix_ = glm::scale(glm::rotate(glm::translate(glm::mat4(0.01f), glm::vec3(-3.0f, 0.0f, -5.0f)), static_cast<float>(currentTime), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(0.01f));
     }

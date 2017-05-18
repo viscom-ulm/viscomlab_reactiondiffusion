@@ -62,9 +62,23 @@ namespace viscom {
         double GetCurrentAppTime() const { return appNode_->GetCurrentAppTime(); }
         double GetElapsedTime() const { return appNode_->GetElapsedTime(); }
 
+        std::uint64_t& GetCurrentLocalIterationCount() { return currentLocalIterationCount_; }
+        std::uint64_t& GetGlobalIterationCount() { return currentGlobalIterationCount_; }
+        sgct::SharedUInt64& GetGlobalIterationCountShared() { return currentGlobalIterationCountShared_; }
+
+        /** The maximum iteration count per frame. */
+        static constexpr std::uint64_t MAX_FRAME_ITERATIONS = 10;
+
     private:
         /** Holds the application node. */
         ApplicationNode* appNode_;
+
+        /** The current local iteration count. */
+        std::uint64_t currentLocalIterationCount_;
+        /** The current global iteration count. */
+        std::uint64_t currentGlobalIterationCount_;
+        /** The current global iteration count (shared). */
+        sgct::SharedUInt64 currentGlobalIterationCountShared_;
 
         /** Holds the shader program for drawing the background. */
         std::shared_ptr<GPUProgram> backgroundProgram_;

@@ -28,6 +28,13 @@ namespace viscom {
     void MasterNode::PreSync()
     {
         ApplicationNodeImplementation::PreSync();
+        GetGlobalIterationCountShared().setVal(GetGlobalIterationCount());
+    }
+
+    void MasterNode::UpdateFrame(double currentTime, double elapsedTime)
+    {
+        ApplicationNodeImplementation::UpdateFrame(currentTime, elapsedTime);
+        GetGlobalIterationCount() += ApplicationNodeImplementation::MAX_FRAME_ITERATIONS;
     }
 
     void MasterNode::DrawFrame(FrameBuffer& fbo)

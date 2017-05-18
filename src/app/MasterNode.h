@@ -20,6 +20,7 @@ namespace viscom {
 
         void InitOpenGL() override;
         void PreSync() override;
+        virtual void UpdateFrame(double currentTime, double elapsedTime) override;
         void DrawFrame(FrameBuffer& fbo) override;
         void Draw2D(FrameBuffer& fbo) override;
         void CleanUp() override;

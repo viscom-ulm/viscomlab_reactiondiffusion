@@ -15,12 +15,18 @@ namespace viscom {
     {
     }
 
+    SlaveNode::~SlaveNode() = default;
+
     void SlaveNode::Draw2D(FrameBuffer& fbo)
     {
         // always do this call last!
         SlaveNodeInternal::Draw2D(fbo);
     }
 
-    SlaveNode::~SlaveNode() = default;
+    void SlaveNode::UpdateSyncedInfo()
+    {
+        SlaveNodeInternal::UpdateSyncedInfo();
+        GetGlobalIterationCount() = GetGlobalIterationCountShared().getVal();
+    }
 
 }
