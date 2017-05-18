@@ -72,6 +72,10 @@ namespace viscom {
         static constexpr unsigned int SIMULATION_SIZE_X = 1920;
         /** The simulation frame buffer size (y). */
         static constexpr unsigned int SIMULATION_SIZE_Y = 1080;
+        /** The distance the simulation will be drawn at. */
+        static constexpr float SIMULATION_DRAW_DISTANCE = 10.0f;
+        /** The simulation height field height. */
+        static constexpr float SIMULATION_HEIGHT = 1.0f;
 
     private:
         /** Holds the application node. */
@@ -102,6 +106,29 @@ namespace viscom {
         std::shared_ptr<GPUProgram> teapotProgram_;
         /** Holds the location of the VP matrix. */
         GLint teapotVPLoc_ = -1;
+
+        /** Holds the shader program for raycasting the height field back side. */
+        std::shared_ptr<GPUProgram> raycastBackProgram_;
+        /** Holds the location of the VP matrix. */
+        GLint raycastBackVPLoc_ = -1;
+        /** Holds the location of the simulation quad size. */
+        GLint raycastBackQuadSizeLoc_ = -1;
+
+        /** Holds the shader program for raycasting the height field. */
+        std::shared_ptr<GPUProgram> raycastProgram_;
+        /** Holds the location of the VP matrix. */
+        GLint raycastVPLoc_ = -1;
+        /** Holds the location of the simulation quad size. */
+        GLint raycastQuadSizeLoc_ = -1;
+        /** Holds the location of the simulation height. */
+        GLint raycastSimHeightLoc_ = -1;
+        /** Holds the location of the environment map. */
+        GLint raycastEnvMapLoc_ = -1;
+        /** Holds the location of the background texture. */
+        GLint raycastBGTexLoc_ = -1;
+
+        /** Holds the dummy VAO for the simulation quad. */
+        GLuint simDummyVAO_ = 0;
 
         /** Holds the number of vertices of the background grid. */
         unsigned int numBackgroundVertices_ = 0;

@@ -42,6 +42,18 @@ namespace viscom {
         teapotProgram_ = appNode_->GetGPUProgramManager().GetResource("foregroundMesh", std::initializer_list<std::string>{ "foregroundMesh.vert", "foregroundMesh.frag" });
         teapotVPLoc_ = teapotProgram_->getUniformLocation("viewProjectionMatrix");
 
+        raycastBackProgram_ = appNode_->GetGPUProgramManager().GetResource("raycastHeightfieldBack", std::initializer_list<std::string>{ "raycastHeightfieldBack.vert", "raycastHeightfieldBack.frag" });
+        raycastBackVPLoc_ = raycastBackProgram_->getUniformLocation("viewProjectionMatrix");
+        raycastBackQuadSizeLoc_ = raycastBackProgram_->getUniformLocation("quadSize");
+        raycastProgram_ = appNode_->GetGPUProgramManager().GetResource("raycastHeightfield", std::initializer_list<std::string>{ "raycastHeightfield.vert", "raycastHeightfield.frag" });
+        raycastVPLoc_ = raycastProgram_->getUniformLocation("viewProjectionMatrix");
+        raycastQuadSizeLoc_ = raycastProgram_->getUniformLocation("quadSize");
+        raycastSimHeightLoc_ = raycastProgram_->getUniformLocation("simulationHeight");
+        raycastEnvMapLoc_ = raycastProgram_->getUniformLocation("environment");
+        raycastBGTexLoc_ = raycastProgram_->getUniformLocation("backgroundTexture");
+
+        glGenVertexArrays(1, &simDummyVAO_);
+
         std::vector<GridVertex> gridVertices;
 
         auto delta = 0.125f;
@@ -135,6 +147,10 @@ namespace viscom {
 
     void ApplicationNodeImplementation::DrawFrame(FrameBuffer& fbo)
     {
+        auto perspectiveMatrix = GetEngine()->getCurrentProjectionMatrix();
+        auto sx = SIMULATION_DRAW_DISTANCE / perspectiveMatrix[0][0];
+        auto sy = SIMULATION_DRAW_DISTANCE / perspectiveMatrix[1][1];
+
         fbo.DrawToFBO([this]() {
             glBindVertexArray(vaoBackgroundGrid_);
             glBindBuffer(GL_ARRAY_BUFFER, vboBackgroundGrid_);
@@ -182,6 +198,9 @@ namespace viscom {
 
     void ApplicationNodeImplementation::CleanUp()
     {
+        if (simDummyVAO_ != 0) glDeleteVertexArrays(1, &simDummyVAO_);
+        simDummyVAO_ = 0;
+
         if (vaoBackgroundGrid_ != 0) glDeleteVertexArrays(0, &vaoBackgroundGrid_);
         vaoBackgroundGrid_ = 0;
         if (vboBackgroundGrid_ != 0) glDeleteBuffers(0, &vboBackgroundGrid_);
