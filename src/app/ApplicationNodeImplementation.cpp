@@ -27,6 +27,12 @@ namespace viscom {
 
     void ApplicationNodeImplementation::InitOpenGL()
     {
+        FrameBufferDescriptor reactDiffuseFBDesc;
+        reactDiffuseFBDesc.texDesc_.emplace_back(GL_RG32F, GL_TEXTURE_2D);
+        reactDiffuseFBDesc.texDesc_.emplace_back(GL_RG32F, GL_TEXTURE_2D);
+        reactDiffuseFBDesc.texDesc_.emplace_back(GL_R32F, GL_TEXTURE_2D);
+        reactDiffuseFBO_ = std::make_unique<FrameBuffer>(SIMULATION_SIZE_X, SIMULATION_SIZE_Y, reactDiffuseFBDesc);
+
         backgroundProgram_ = appNode_->GetGPUProgramManager().GetResource("backgroundGrid", std::initializer_list<std::string>{ "backgroundGrid.vert", "backgroundGrid.frag" });
         backgroundMVPLoc_ = backgroundProgram_->getUniformLocation("MVP");
 
@@ -95,6 +101,8 @@ namespace viscom {
         if (currentLocalIterationCount_ < currentGlobalIterationCount_) {
             auto iterations = glm::max(currentGlobalIterationCount_ - currentLocalIterationCount_, MAX_FRAME_ITERATIONS);
             for (std::uint64_t i = 0; i < iterations; ++i) {
+                reactDiffuseFBO_->DrawToFBO([]() {
+                });
             }
             currentLocalIterationCount_ += iterations;
         }

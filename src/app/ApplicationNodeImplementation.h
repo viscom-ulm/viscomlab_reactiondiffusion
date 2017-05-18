@@ -68,6 +68,10 @@ namespace viscom {
 
         /** The maximum iteration count per frame. */
         static constexpr std::uint64_t MAX_FRAME_ITERATIONS = 10;
+        /** The simulation frame buffer size (x). */
+        static constexpr unsigned int SIMULATION_SIZE_X = 1920;
+        /** The simulation frame buffer size (y). */
+        static constexpr unsigned int SIMULATION_SIZE_Y = 1080;
 
     private:
         /** Holds the application node. */
@@ -80,6 +84,8 @@ namespace viscom {
         /** The current global iteration count (shared). */
         sgct::SharedUInt64 currentGlobalIterationCountShared_;
 
+        /** The frame buffer object for the simulation. */
+        std::unique_ptr<FrameBuffer> reactDiffuseFBO_;
         /** Holds the shader program for drawing the background. */
         std::shared_ptr<GPUProgram> backgroundProgram_;
         /** Holds the location of the MVP matrix. */
