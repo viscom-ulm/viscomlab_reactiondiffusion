@@ -33,6 +33,18 @@ namespace viscom {
         reactDiffuseFBDesc.texDesc_.emplace_back(GL_R32F, GL_TEXTURE_2D);
         reactDiffuseFBO_ = std::make_unique<FrameBuffer>(SIMULATION_SIZE_X, SIMULATION_SIZE_Y, reactDiffuseFBDesc);
 
+
+        FrameBufferDescriptor simulationBackFBDesc;
+        simulationBackFBDesc.texDesc_.emplace_back(GL_RG32F, GL_TEXTURE_2D);
+        simulationBackFBDesc.rbDesc_.emplace_back(GL_DEPTH_COMPONENT32);
+
+        auto numWindows = sgct_core::ClusterManager::instance()->getThisNodePtr()->getNumberOfWindows();
+        for (auto i = 0U; i < numWindows; ++i) {
+            auto fboSize = GetViewportQuadSize(i);
+            simulationBackFBOs_.emplace_back(fboSize.x, fboSize.y, simulationBackFBDesc);
+        }
+
+
         backgroundProgram_ = appNode_->GetGPUProgramManager().GetResource("backgroundGrid", std::initializer_list<std::string>{ "backgroundGrid.vert", "backgroundGrid.frag" });
         backgroundMVPLoc_ = backgroundProgram_->getUniformLocation("MVP");
 
@@ -51,8 +63,11 @@ namespace viscom {
         raycastSimHeightLoc_ = raycastProgram_->getUniformLocation("simulationHeight");
         raycastEnvMapLoc_ = raycastProgram_->getUniformLocation("environment");
         raycastBGTexLoc_ = raycastProgram_->getUniformLocation("backgroundTexture");
+        raycastPositionBackTexLoc_ = raycastProgram_->getUniformLocation("backPositionTexture");
 
         glGenVertexArrays(1, &simDummyVAO_);
+        backgroundTexture_ = appNode_->GetTextureManager().GetResource("models/teapot/default.png");
+        environmentMap_ = appNode_->GetTextureManager().GetResource("textures/grace.hdr");
 
         std::vector<GridVertex> gridVertices;
 
@@ -138,6 +153,13 @@ namespace viscom {
 
     void ApplicationNodeImplementation::ClearBuffer(FrameBuffer& fbo)
     {
+        auto windowId = GetEngine()->getCurrentWindowPtr()->getId();
+        simulationBackFBOs_[windowId].DrawToFBO([]() {
+            glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+            glClearDepth(1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        });
+
         fbo.DrawToFBO([]() {
             auto colorPtr = sgct::Engine::instance()->getClearColor();
             glClearColor(colorPtr[0], colorPtr[1], colorPtr[2], colorPtr[3]);
@@ -148,10 +170,42 @@ namespace viscom {
     void ApplicationNodeImplementation::DrawFrame(FrameBuffer& fbo)
     {
         auto perspectiveMatrix = GetEngine()->getCurrentProjectionMatrix();
-        auto sx = SIMULATION_DRAW_DISTANCE / perspectiveMatrix[0][0];
-        auto sy = SIMULATION_DRAW_DISTANCE / perspectiveMatrix[1][1];
+        glm::vec2 simulationSize(SIMULATION_DRAW_DISTANCE);
+        simulationSize /= glm::vec2(perspectiveMatrix[0][0], perspectiveMatrix[1][1]);
 
-        fbo.DrawToFBO([this]() {
+        auto windowId = GetEngine()->getCurrentWindowPtr()->getId();
+        simulationBackFBOs_[windowId].DrawToFBO([this, &perspectiveMatrix, &simulationSize]() {
+            glBindVertexArray(simDummyVAO_);
+            glUseProgram(raycastBackProgram_->getProgramId());
+            glUniformMatrix4fv(raycastBackVPLoc_, 1, GL_FALSE, glm::value_ptr(perspectiveMatrix));
+            glUniform2fv(raycastBackQuadSizeLoc_, 1, glm::value_ptr(simulationSize));
+            glDrawArrays(GL_TRIANGLES, 0, 4);
+        });
+
+        fbo.DrawToFBO([this, &perspectiveMatrix, &simulationSize, windowId]() {
+            {
+                glBindVertexArray(simDummyVAO_);
+                glUseProgram(raycastProgram_->getProgramId());
+                glUniformMatrix4fv(raycastVPLoc_, 1, GL_FALSE, glm::value_ptr(perspectiveMatrix));
+                glUniform2fv(raycastQuadSizeLoc_, 1, glm::value_ptr(simulationSize));
+                glUniform1f(raycastSimHeightLoc_, SIMULATION_HEIGHT);
+
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE0, environmentMap_->getTextureId());
+                glUniform1i(raycastEnvMapLoc_, 0);
+
+                glActiveTexture(GL_TEXTURE0 + 1);
+                glBindTexture(GL_TEXTURE0 + 1, backgroundTexture_->getTextureId());
+                glUniform1i(raycastBGTexLoc_, 1);
+
+                glActiveTexture(GL_TEXTURE0 + 2);
+                glBindTexture(GL_TEXTURE0 + 2, simulationBackFBOs_[windowId].GetTextures()[0]);
+                glUniform1i(raycastPositionBackTexLoc_, 2);
+
+                glDrawArrays(GL_TRIANGLES, 0, 4);
+            }
+
+
             glBindVertexArray(vaoBackgroundGrid_);
             glBindBuffer(GL_ARRAY_BUFFER, vboBackgroundGrid_);
 

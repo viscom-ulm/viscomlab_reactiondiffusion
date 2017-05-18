@@ -92,6 +92,9 @@ namespace viscom {
 
         /** The frame buffer object for the simulation. */
         std::unique_ptr<FrameBuffer> reactDiffuseFBO_;
+        /** The frame buffer objects for the simulation height field back. */
+        std::vector<FrameBuffer> simulationBackFBOs_;
+
         /** Holds the shader program for drawing the background. */
         std::shared_ptr<GPUProgram> backgroundProgram_;
         /** Holds the location of the MVP matrix. */
@@ -126,9 +129,15 @@ namespace viscom {
         GLint raycastEnvMapLoc_ = -1;
         /** Holds the location of the background texture. */
         GLint raycastBGTexLoc_ = -1;
+        /** Holds the location of the back position texture. */
+        GLint raycastPositionBackTexLoc_ = -1;
 
         /** Holds the dummy VAO for the simulation quad. */
         GLuint simDummyVAO_ = 0;
+        /** Holds the background texture for the simulation. */
+        std::shared_ptr<Texture> backgroundTexture_;
+        /** Holds the environment map texture. */
+        std::shared_ptr<Texture> environmentMap_;
 
         /** Holds the number of vertices of the background grid. */
         unsigned int numBackgroundVertices_ = 0;
