@@ -98,10 +98,24 @@ namespace viscom {
 
     void ApplicationNodeImplementation::UpdateFrame(double currentTime, double)
     {
+        static const std::vector<unsigned int> drawBuffers0{{0, 2}};
+        static const std::vector<unsigned int> drawBuffers1{{1, 2}};
+
         if (currentLocalIterationCount_ < currentGlobalIterationCount_) {
             auto iterations = glm::max(currentGlobalIterationCount_ - currentLocalIterationCount_, MAX_FRAME_ITERATIONS);
             for (std::uint64_t i = 0; i < iterations; ++i) {
-                reactDiffuseFBO_->DrawToFBO([]() {
+                const std::vector<unsigned int>* currentDrawBuffers{nullptr};
+                glActiveTexture(GL_TEXTURE0);
+                if (iteration_toggle_) {
+                    currentDrawBuffers = &drawBuffers0;
+                    glBindTexture(GL_TEXTURE0, reactDiffuseFBO_->GetTextures()[1]);
+                } else {
+                    currentDrawBuffers = &drawBuffers1;
+                    glBindTexture(GL_TEXTURE0, reactDiffuseFBO_->GetTextures()[0]);
+                }
+                iteration_toggle_ = !iteration_toggle_;
+                reactDiffuseFBO_->DrawToFBO(*currentDrawBuffers, []() {
+
                 });
             }
             currentLocalIterationCount_ += iterations;

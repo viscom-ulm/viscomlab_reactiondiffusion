@@ -83,6 +83,8 @@ namespace viscom {
         std::uint64_t currentGlobalIterationCount_;
         /** The current global iteration count (shared). */
         sgct::SharedUInt64 currentGlobalIterationCountShared_;
+        /** Toggle switch for iteration step */
+        bool iteration_toggle_;
 
         /** The frame buffer object for the simulation. */
         std::unique_ptr<FrameBuffer> reactDiffuseFBO_;
