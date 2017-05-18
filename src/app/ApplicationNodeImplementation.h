@@ -116,6 +116,8 @@ namespace viscom {
         GLint raycastBackVPLoc_ = -1;
         /** Holds the location of the simulation quad size. */
         GLint raycastBackQuadSizeLoc_ = -1;
+        /** Holds the location of the simulation quad distance. */
+        GLint raycastBackDistanceLoc_ = -1;
 
         /** Holds the shader program for raycasting the height field. */
         std::shared_ptr<GPUProgram> raycastProgram_;
@@ -123,6 +125,8 @@ namespace viscom {
         GLint raycastVPLoc_ = -1;
         /** Holds the location of the simulation quad size. */
         GLint raycastQuadSizeLoc_ = -1;
+        /** Holds the location of the simulation quad distance. */
+        GLint raycastDistanceLoc_ = -1;
         /** Holds the location of the simulation height. */
         GLint raycastSimHeightLoc_ = -1;
         /** Holds the location of the environment map. */

@@ -54,12 +54,14 @@ namespace viscom {
         teapotProgram_ = appNode_->GetGPUProgramManager().GetResource("foregroundMesh", std::initializer_list<std::string>{ "foregroundMesh.vert", "foregroundMesh.frag" });
         teapotVPLoc_ = teapotProgram_->getUniformLocation("viewProjectionMatrix");
 
-        raycastBackProgram_ = appNode_->GetGPUProgramManager().GetResource("raycastHeightfieldBack", std::initializer_list<std::string>{ "raycastHeightfieldBack.vert", "raycastHeightfieldBack.frag" });
+        raycastBackProgram_ = appNode_->GetGPUProgramManager().GetResource("raycastHeightfieldBack", std::initializer_list<std::string>{ "raycastHeightfield.vert", "raycastHeightfieldBack.frag" });
         raycastBackVPLoc_ = raycastBackProgram_->getUniformLocation("viewProjectionMatrix");
         raycastBackQuadSizeLoc_ = raycastBackProgram_->getUniformLocation("quadSize");
+        raycastBackDistanceLoc_ = raycastBackProgram_->getUniformLocation("distance");
         raycastProgram_ = appNode_->GetGPUProgramManager().GetResource("raycastHeightfield", std::initializer_list<std::string>{ "raycastHeightfield.vert", "raycastHeightfield.frag" });
         raycastVPLoc_ = raycastProgram_->getUniformLocation("viewProjectionMatrix");
         raycastQuadSizeLoc_ = raycastProgram_->getUniformLocation("quadSize");
+        raycastDistanceLoc_ = raycastProgram_->getUniformLocation("distance");
         raycastSimHeightLoc_ = raycastProgram_->getUniformLocation("simulationHeight");
         raycastEnvMapLoc_ = raycastProgram_->getUniformLocation("environment");
         raycastBGTexLoc_ = raycastProgram_->getUniformLocation("backgroundTexture");
@@ -179,7 +181,8 @@ namespace viscom {
             glUseProgram(raycastBackProgram_->getProgramId());
             glUniformMatrix4fv(raycastBackVPLoc_, 1, GL_FALSE, glm::value_ptr(perspectiveMatrix));
             glUniform2fv(raycastBackQuadSizeLoc_, 1, glm::value_ptr(simulationSize));
-            glDrawArrays(GL_TRIANGLES, 0, 4);
+            glUniform1f(raycastBackDistanceLoc_, SIMULATION_DRAW_DISTANCE);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         });
 
         fbo.DrawToFBO([this, &perspectiveMatrix, &simulationSize, windowId]() {
@@ -188,6 +191,7 @@ namespace viscom {
                 glUseProgram(raycastProgram_->getProgramId());
                 glUniformMatrix4fv(raycastVPLoc_, 1, GL_FALSE, glm::value_ptr(perspectiveMatrix));
                 glUniform2fv(raycastQuadSizeLoc_, 1, glm::value_ptr(simulationSize));
+                glUniform1f(raycastDistanceLoc_, SIMULATION_DRAW_DISTANCE - SIMULATION_HEIGHT);
                 glUniform1f(raycastSimHeightLoc_, SIMULATION_HEIGHT);
 
                 glActiveTexture(GL_TEXTURE0);
@@ -202,7 +206,7 @@ namespace viscom {
                 glBindTexture(GL_TEXTURE0 + 2, simulationBackFBOs_[windowId].GetTextures()[0]);
                 glUniform1i(raycastPositionBackTexLoc_, 2);
 
-                glDrawArrays(GL_TRIANGLES, 0, 4);
+                glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
             }
 
 
