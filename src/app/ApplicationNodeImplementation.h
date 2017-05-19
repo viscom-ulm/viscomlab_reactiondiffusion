@@ -22,6 +22,8 @@ namespace viscom {
         float simulationHeight_ = 1.0f;
         /** The relative index of refraction used for raycasting. */
         float eta_ = 1.5f;
+        /** The absorption coefficient. */
+        float sigma_a_ = 2.0f;
         /** The current global iteration count. */
         std::uint64_t currentGlobalIterationCount_;
     };
@@ -124,6 +126,8 @@ namespace viscom {
         GLint raycastCamPosLoc_ = -1;
         /** Holds the location of index of refraction. */
         GLint raycastEtaLoc_ = -1;
+        /** Holds the location of the absorption coefficient. */
+        GLint raycastSigmaALoc_ = -1;
         /** Holds the location of the environment map. */
         GLint raycastEnvMapLoc_ = -1;
         /** Holds the location of the background texture. */

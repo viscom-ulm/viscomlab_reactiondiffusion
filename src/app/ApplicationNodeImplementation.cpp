@@ -56,6 +56,7 @@ namespace viscom {
         raycastSimHeightLoc_ = raycastProgram_->getUniformLocation("simulationHeight");
         raycastCamPosLoc_ = raycastProgram_->getUniformLocation("cameraPosition");
         raycastEtaLoc_ = raycastProgram_->getUniformLocation("eta");
+        raycastSigmaALoc_ = raycastProgram_->getUniformLocation("sigma_a");
         raycastEnvMapLoc_ = raycastProgram_->getUniformLocation("environment");
         raycastBGTexLoc_ = raycastProgram_->getUniformLocation("backgroundTexture");
         raycastHeightTextureLoc_ = raycastProgram_->getUniformLocation("heightTexture");
@@ -142,6 +143,7 @@ namespace viscom {
                 glUniform1f(raycastSimHeightLoc_, simData_.simulationHeight_);
                 glUniform3fv(raycastCamPosLoc_, 1, glm::value_ptr(camPos));
                 glUniform1f(raycastEtaLoc_, simData_.eta_);
+                glUniform1f(raycastSigmaALoc_, simData_.sigma_a_);
 
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, environmentMap_->getTextureId());

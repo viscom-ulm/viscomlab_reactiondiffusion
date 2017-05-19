@@ -9,6 +9,7 @@ uniform float distance;
 uniform float simulationHeight;
 uniform vec3 cameraPosition;
 uniform float eta;
+uniform float sigma_a;
 uniform sampler2D environment;
 uniform sampler2D backgroundTexture;
 uniform sampler2D heightTexture;
@@ -88,22 +89,25 @@ void main()
     vec3 normal = heightfieldNormal(t);
 
     vec3 v = normalize(t - camPos);
-    vec3 rr = reflect(v, normal);
-    vec3 rt = refract(v, normal, eta);
-    vec2 bgCoords = (t - (t.z / rt.z)*rt).xy;
+    vec3 rr = normalize(reflect(v, normal));
+    vec3 rt = normalize(refract(v, normal, 1.0 / eta));
+    vec3 bgHit = (t.z / rt.z)*rt;
+    float bgHitLen = dot(bgHit, bgHit);
+    vec2 bgCoords = (t - bgHit).xy;
     vec2 sphereCoords = reflectionToSpherical(rr);
 
     vec3 cReflection = texture(environment, sphereCoords).rgb;
     vec3 cRefraction = texture(backgroundTexture, bgCoords).rgb;
 
     float R = reflectivity(normal, -v);
-    float T = 1.0 - R;
+    float T = (1.0 - R) * exp(-sigma_a * bgHitLen);
 
     color = vec4(sqrt(R * cReflection + T * cRefraction), 1.0);
     
     // vec3 l = lightPos;// vec3(0.5, 0.5, 5.0);
     // float diffuse = 0.8* clamp(dot(normal, l - t), 0.0, 1.0);
     // color = vec4(normal * 0.5 + 0.5, 1.0);
+    // color = vec4(rt * 0.5 + 0.5, 1.0);
     // color = vec4(t.x, t.y, h, 1);
     // vec3 t = refract(v, normal, eta);
 }
