@@ -31,5 +31,11 @@ namespace viscom {
         void MousePosCallback(double x, double y) override;
         void MouseScrollCallback(double xoffset, double yoffset) override;
 
+        virtual void EncodeData() override;
+        virtual void DecodeData() override;
+
+    private:
+        /** Holds the data the master shares. */
+        sgct::SharedObject<SimulationData> sharedData_;
     };
 }

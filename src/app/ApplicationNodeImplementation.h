@@ -15,6 +15,17 @@ namespace viscom {
 
     class MeshRenderable;
 
+    struct SimulationData {
+        /** The distance the simulation will be drawn at. */
+        float simulationDrawDistance_ = 15.0f;
+        /** The simulation height field height. */
+        float simulationHeight_ = 1.0f;
+        /** The relative index of refraction used for raycasting. */
+        float eta_ = 1.5f;
+        /** The current global iteration count. */
+        std::uint64_t currentGlobalIterationCount_;
+    };
+
     class ApplicationNodeImplementation
     {
     public:
@@ -63,19 +74,15 @@ namespace viscom {
         double GetElapsedTime() const { return appNode_->GetElapsedTime(); }
 
         std::uint64_t& GetCurrentLocalIterationCount() { return currentLocalIterationCount_; }
-        std::uint64_t& GetGlobalIterationCount() { return currentGlobalIterationCount_; }
-        sgct::SharedUInt64& GetGlobalIterationCountShared() { return currentGlobalIterationCountShared_; }
+        SimulationData& GetSimulationData() { return simData_; }
 
         /** The maximum iteration count per frame. */
         static constexpr std::uint64_t MAX_FRAME_ITERATIONS = 10;
+
         /** The simulation frame buffer size (x). */
         static constexpr unsigned int SIMULATION_SIZE_X = 1920;
         /** The simulation frame buffer size (y). */
         static constexpr unsigned int SIMULATION_SIZE_Y = 1080;
-        /** The distance the simulation will be drawn at. */
-        static constexpr float SIMULATION_DRAW_DISTANCE = 10.0f;
-        /** The simulation height field height. */
-        static constexpr float SIMULATION_HEIGHT = 1.0f;
 
     private:
         /** Holds the application node. */
@@ -83,10 +90,9 @@ namespace viscom {
 
         /** The current local iteration count. */
         std::uint64_t currentLocalIterationCount_;
-        /** The current global iteration count. */
-        std::uint64_t currentGlobalIterationCount_;
-        /** The current global iteration count (shared). */
-        sgct::SharedUInt64 currentGlobalIterationCountShared_;
+        /** Holds the simulation data. */
+        SimulationData simData_;
+
         /** Toggle switch for iteration step */
         bool iteration_toggle_;
 
@@ -94,21 +100,6 @@ namespace viscom {
         std::unique_ptr<FrameBuffer> reactDiffuseFBO_;
         /** The frame buffer objects for the simulation height field back. */
         std::vector<FrameBuffer> simulationBackFBOs_;
-
-        /** Holds the shader program for drawing the background. */
-        std::shared_ptr<GPUProgram> backgroundProgram_;
-        /** Holds the location of the MVP matrix. */
-        GLint backgroundMVPLoc_ = -1;
-
-        /** Holds the shader program for drawing the foreground triangle. */
-        std::shared_ptr<GPUProgram> triangleProgram_;
-        /** Holds the location of the MVP matrix. */
-        GLint triangleMVPLoc_ = -1;
-
-        /** Holds the shader program for drawing the foreground teapot. */
-        std::shared_ptr<GPUProgram> teapotProgram_;
-        /** Holds the location of the VP matrix. */
-        GLint teapotVPLoc_ = -1;
 
         /** Holds the shader program for raycasting the height field back side. */
         std::shared_ptr<GPUProgram> raycastBackProgram_;
@@ -129,10 +120,16 @@ namespace viscom {
         GLint raycastDistanceLoc_ = -1;
         /** Holds the location of the simulation height. */
         GLint raycastSimHeightLoc_ = -1;
+        /** Holds the location of the camera position. */
+        GLint raycastCamPosLoc_ = -1;
+        /** Holds the location of index of refraction. */
+        GLint raycastEtaLoc_ = -1;
         /** Holds the location of the environment map. */
         GLint raycastEnvMapLoc_ = -1;
         /** Holds the location of the background texture. */
         GLint raycastBGTexLoc_ = -1;
+        /** Holds the location of the height texture. */
+        GLint raycastHeightTextureLoc_ = -1;
         /** Holds the location of the back position texture. */
         GLint raycastPositionBackTexLoc_ = -1;
 
@@ -142,20 +139,5 @@ namespace viscom {
         std::shared_ptr<Texture> backgroundTexture_;
         /** Holds the environment map texture. */
         std::shared_ptr<Texture> environmentMap_;
-
-        /** Holds the number of vertices of the background grid. */
-        unsigned int numBackgroundVertices_ = 0;
-        /** Holds the vertex buffer for the background grid. */
-        GLuint vboBackgroundGrid_ = 0;
-        /** Holds the vertex array object for the background grid. */
-        GLuint vaoBackgroundGrid_ = 0;
-
-        /** Holds the teapot mesh. */
-        std::shared_ptr<Mesh> teapotMesh_;
-        /** Holds the teapot mesh renderable. */
-        std::unique_ptr<MeshRenderable> teapotRenderable_;
-
-        glm::mat4 triangleModelMatrix_;
-        glm::mat4 teapotModelMatrix_;
     };
 }

@@ -26,7 +26,19 @@ namespace viscom {
     void SlaveNode::UpdateSyncedInfo()
     {
         SlaveNodeInternal::UpdateSyncedInfo();
-        GetGlobalIterationCount() = GetGlobalIterationCountShared().getVal();
+        GetSimulationData() = sharedData_.getVal();
+    }
+
+    void SlaveNode::EncodeData()
+    {
+        SlaveNodeInternal::EncodeData();
+        sgct::SharedData::instance()->writeObj(&sharedData_);
+    }
+
+    void SlaveNode::DecodeData()
+    {
+        SlaveNodeInternal::DecodeData();
+        sgct::SharedData::instance()->readObj(&sharedData_);
     }
 
 }

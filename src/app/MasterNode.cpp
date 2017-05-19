@@ -28,13 +28,13 @@ namespace viscom {
     void MasterNode::PreSync()
     {
         ApplicationNodeImplementation::PreSync();
-        GetGlobalIterationCountShared().setVal(GetGlobalIterationCount());
+        sharedData_.setVal(GetSimulationData());
     }
 
     void MasterNode::UpdateFrame(double currentTime, double elapsedTime)
     {
         ApplicationNodeImplementation::UpdateFrame(currentTime, elapsedTime);
-        GetGlobalIterationCount() += ApplicationNodeImplementation::MAX_FRAME_ITERATIONS;
+        GetSimulationData().currentGlobalIterationCount_ += ApplicationNodeImplementation::MAX_FRAME_ITERATIONS;
     }
 
     void MasterNode::DrawFrame(FrameBuffer& fbo)
@@ -44,15 +44,14 @@ namespace viscom {
 
     void MasterNode::Draw2D(FrameBuffer& fbo)
     {
-        fbo.DrawToFBO([]() {
-#ifndef VISCOM_CLIENTGUI
-            ImGui::ShowTestWindow();
-#endif
-            ImGui::SetNextWindowPos(ImVec2(700, 60), ImGuiSetCond_FirstUseEver);
-            ImGui::SetNextWindowSize(ImVec2(550, 680), ImGuiSetCond_FirstUseEver);
-            if (ImGui::Begin("MasterTestWindow", nullptr, ImGuiWindowFlags_ShowBorders))
+        fbo.DrawToFBO([this]() {
+            ImGui::SetNextWindowSize(ImVec2(480.0f, 200.0f), ImGuiSetCond_FirstUseEver);
+            ImGui::SetNextWindowPos(ImVec2(1920.0f - 480.0f - 10.0f, 1080.0f - 200.0f - 10.0f), ImGuiSetCond_FirstUseEver);
+            ImGui::Begin("Simulation Parameters");
             {
-                ImGui::Text("Hello World on Master!");
+                ImGui::SliderFloat("Draw Distance", &GetSimulationData().simulationDrawDistance_, 5.0f, 20.0f);
+                ImGui::SliderFloat("Height", &GetSimulationData().simulationHeight_, 0.1f, 3.0f);
+                ImGui::SliderFloat("Eta", &GetSimulationData().eta_, 1.0f, 3.0f);
             }
             ImGui::End();
         });
@@ -103,6 +102,18 @@ namespace viscom {
         ImGui_ImplGlfwGL3_ScrollCallback(xoffset, yoffset);
 #endif
         ApplicationNodeImplementation::MouseScrollCallback(xoffset, yoffset);
+    }
+
+    void MasterNode::EncodeData()
+    {
+        ApplicationNodeImplementation::EncodeData();
+        sgct::SharedData::instance()->writeObj(&sharedData_);
+    }
+
+    void MasterNode::DecodeData()
+    {
+        ApplicationNodeImplementation::DecodeData();
+        sgct::SharedData::instance()->readObj(&sharedData_);
     }
 
 }
