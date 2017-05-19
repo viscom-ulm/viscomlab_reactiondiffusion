@@ -44,6 +44,31 @@ float heightField(vec2 texCoords) {
         + (5.0 * heightFieldSphere(texCoords, vec2(0.88, 0.88), 0.09));
 }
 
+vec3 heightfieldNormal(vec3 p) {
+    const vec2 deltaX = vec2(0.000001, 0.0);
+    const vec2 deltaY = vec2(0.0, 0.000001);
+
+    vec3 dx0 = vec3(p.xy - deltaX, heightField(p.xy - deltaX));
+    vec3 dx1 = vec3(p.xy + deltaX, heightField(p.xy + deltaX));
+    vec3 tDX = dx1 - dx0;
+
+    vec3 dy0 = vec3(p.xy - deltaY, heightField(p.xy - deltaY));
+    vec3 dy1 = vec3(p.xy + deltaY, heightField(p.xy + deltaY));
+    vec3 tDY = dy1 - dy0;
+
+    //vec3 tDX = dFdx(p);
+    //vec3 tDY = dFdy(p);
+    return normalize(cross(tDX, tDY));
+}
+
+float reflectivity(vec3 n, vec3 v) {
+    float R0 = (1.0 - eta) / (1.0 + eta);
+    R0 *= R0;
+    float cosTerm = 1.0 - max(dot(n, v), 0.0);
+    float cosTerm2 = cosTerm * cosTerm;
+    return R0 + (1.0 - R0) * cosTerm2 * cosTerm2 * cosTerm;
+}
+
 void main()
 {
     // vec3 lightPos = worldToTex(vec3(5, 2, -3));
@@ -55,25 +80,30 @@ void main()
     vec3 t1m0 = t1 - t0;
 
     vec3 t = t0;
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < 20; ++i) {
         float h = heightField(t.xy);
         t = t0 + (h * t1m0);
     }
 
-    vec3 tRel = t - camPos;
-    vec3 tDX = dFdx(tRel);
-    vec3 tDY = dFdy(tRel);
-    vec3 normal = normalize(cross(tDX, tDY));
+    vec3 normal = heightfieldNormal(t);
 
-    vec3 v = camPos - t;
-    vec3 r = reflect(v, normal);
-    vec2 sphereCoords = reflectionToSpherical(r);
+    vec3 v = normalize(t - camPos);
+    vec3 rr = reflect(v, normal);
+    vec3 rt = refract(v, normal, eta);
+    vec2 bgCoords = (t - (t.z / rt.z)*rt).xy;
+    vec2 sphereCoords = reflectionToSpherical(rr);
 
-    color = vec4(sqrt(texture(environment, sphereCoords).rgb), 1.0);
+    vec3 cReflection = texture(environment, sphereCoords).rgb;
+    vec3 cRefraction = texture(backgroundTexture, bgCoords).rgb;
+
+    float R = reflectivity(normal, -v);
+    float T = 1.0 - R;
+
+    color = vec4(sqrt(R * cReflection + T * cRefraction), 1.0);
     
     // vec3 l = lightPos;// vec3(0.5, 0.5, 5.0);
     // float diffuse = 0.8* clamp(dot(normal, l - t), 0.0, 1.0);
-    // color = vec4(vec3(sqrt(diffuse)), 1.0);
+    // color = vec4(normal * 0.5 + 0.5, 1.0);
     // color = vec4(t.x, t.y, h, 1);
     // vec3 t = refract(v, normal, eta);
 }
