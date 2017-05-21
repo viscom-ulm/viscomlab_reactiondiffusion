@@ -9,7 +9,7 @@
 #pragma once
 
 #include <sgct/Engine.h>
-#include "core/ApplicationNode.h"
+#include "core/ApplicationNodeInternal.h"
 
 namespace viscom {
 
@@ -31,7 +31,7 @@ namespace viscom {
     class ApplicationNodeImplementation
     {
     public:
-        explicit ApplicationNodeImplementation(ApplicationNode* appNode);
+        explicit ApplicationNodeImplementation(ApplicationNodeInternal* appNode);
         ApplicationNodeImplementation(const ApplicationNodeImplementation&) = delete;
         ApplicationNodeImplementation(ApplicationNodeImplementation&&) = delete;
         ApplicationNodeImplementation& operator=(const ApplicationNodeImplementation&) = delete;
@@ -61,9 +61,7 @@ namespace viscom {
     protected:
         sgct::Engine* GetEngine() const { return appNode_->GetEngine(); }
         const FWConfiguration& GetConfig() const { return appNode_->GetConfig(); }
-        ApplicationNode* GetApplication() const { return appNode_; }
-
-        unsigned int GetGlobalProjectorId(int nodeId, int windowId) const { return appNode_->GetGlobalProjectorId(nodeId, windowId); }
+        ApplicationNodeInternal* GetApplication() const { return appNode_; }
 
         const Viewport& GetViewportScreen(size_t windowId) const { return appNode_->GetViewportScreen(windowId); }
         Viewport& GetViewportScreen(size_t windowId) { return appNode_->GetViewportScreen(windowId); }
@@ -88,7 +86,7 @@ namespace viscom {
 
     private:
         /** Holds the application node. */
-        ApplicationNode* appNode_;
+        ApplicationNodeInternal* appNode_;
 
         /** The current local iteration count. */
         std::uint64_t currentLocalIterationCount_;
@@ -143,5 +141,10 @@ namespace viscom {
         std::shared_ptr<Texture> backgroundTexture_;
         /** Holds the environment map texture. */
         std::shared_ptr<Texture> environmentMap_;
+
+#ifndef VISCOM_LOCAL_ONLY
+    protected:
+        unsigned int GetGlobalProjectorId(int nodeId, int windowId) const { return appNode_->GetGlobalProjectorId(nodeId, windowId); }
+#endif
     };
 }
