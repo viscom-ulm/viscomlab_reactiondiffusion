@@ -10,6 +10,7 @@
 #include "Vertices.h"
 #include <imgui.h>
 #include "core/gfx/mesh/MeshRenderable.h"
+#include "core/gfx/FullscreenQuad.h"
 #include "core/imgui/imgui_impl_glfw_gl3.h"
 
 namespace viscom {
@@ -62,6 +63,19 @@ namespace viscom {
         raycastHeightTextureLoc_ = raycastProgram_->getUniformLocation("heightTexture");
         raycastPositionBackTexLoc_ = raycastProgram_->getUniformLocation("backPositionTexture");
 
+        reactionDiffusionFullScreenQuad_ = std::make_unique<FullscreenQuad>("reactionDiffusionSimulation.frag", appNode_);
+        const auto rdGpuProgram = reactionDiffusionFullScreenQuad_->GetGPUProgram();
+        rdPrevIterationTextureLoc_ = rdGpuProgram->getUniformLocation("texture_0");
+        rdDiffusionRateALoc_ = rdGpuProgram->getUniformLocation("diffusion_rate_A");
+        rdDiffusionRateBLoc_ = rdGpuProgram->getUniformLocation("diffusion_rate_B");
+        rdFeedRateLoc_ = rdGpuProgram->getUniformLocation("feed_rate");
+        rdKillRateLoc_ = rdGpuProgram->getUniformLocation("kill_rate");
+        rdDtLoc_ = rdGpuProgram->getUniformLocation("dt");
+        rdSeedPointRadiusLoc_ = rdGpuProgram->getUniformLocation("seed_point_radius");
+        rdNumSeedPointsLoc_ = rdGpuProgram->getUniformLocation("num_seed_points");
+        rdSeedPointsLoc_ = rdGpuProgram->getUniformLocation("seed_points");
+        rdUseManhattenDistanceLoc_ = rdGpuProgram->getUniformLocation("use_manhatten_distance");
+
         glGenVertexArrays(1, &simDummyVAO_);
         backgroundTexture_ = appNode_->GetTextureManager().GetResource("models/teapot/default.png");
         environmentMap_ = appNode_->GetTextureManager().GetResource("textures/grace_probe.hdr");
@@ -85,17 +99,42 @@ namespace viscom {
             for (std::uint64_t i = 0; i < iterations; ++i) {
                 const std::vector<unsigned int>* currentDrawBuffers{nullptr};
                 glActiveTexture(GL_TEXTURE0);
-                if (iteration_toggle_) {
+                if (iterationToggle_) {
                     currentDrawBuffers = &drawBuffers0;
-                    glBindTexture(GL_TEXTURE0, reactDiffuseFBO_->GetTextures()[1]);
+                    glBindTexture(GL_TEXTURE_2D, reactDiffuseFBO_->GetTextures()[1]);
                 } else {
                     currentDrawBuffers = &drawBuffers1;
-                    glBindTexture(GL_TEXTURE0, reactDiffuseFBO_->GetTextures()[0]);
+                    glBindTexture(GL_TEXTURE_2D, reactDiffuseFBO_->GetTextures()[0]);
                 }
-                iteration_toggle_ = !iteration_toggle_;
-                reactDiffuseFBO_->DrawToFBO(*currentDrawBuffers, []() {
-
+                iterationToggle_ = !iterationToggle_;
+                
+                const auto rdGpuProgram = reactionDiffusionFullScreenQuad_->GetGPUProgram();
+                glUseProgram(rdGpuProgram->getProgramId());
+                glUniform1i(rdPrevIterationTextureLoc_, 0);
+                glUniform1f(rdDiffusionRateALoc_, 0.0f);
+                glUniform1f(rdDiffusionRateBLoc_, 0.0f);
+                glUniform1f(rdFeedRateLoc_, 0.0f);
+                glUniform1f(rdKillRateLoc_, 0.0f);
+                glUniform1f(rdDtLoc_, 0.0f);
+                glUniform1f(rdSeedPointRadiusLoc_, 0.0f);
+                glUniform1ui(rdNumSeedPointsLoc_, 0);
+                std::vector<glm::vec2> seedPts;
+                glUniform2fv(rdSeedPointsLoc_, 0, glm::value_ptr(seedPts[0]));
+                glUniform1i(rdUseManhattenDistanceLoc_, 0);
+                reactDiffuseFBO_->DrawToFBO(*currentDrawBuffers, [this]() {
+                    reactionDiffusionFullScreenQuad_->Draw();
                 });
+
+                /*uniform float diffusion_rate_A = 1.0;
+                uniform float diffusion_rate_B = 0.5;
+                uniform float feed_rate = 0.055;
+                uniform float kill_rate = 0.062;
+                uniform float dt = 1.0;
+
+                uniform float seed_point_radius = 0.001;
+                uniform uint num_seed_points = 0;
+                uniform vec2 seed_points[10];
+                uniform bool use_manhatten_distance = false;*/
             }
             currentLocalIterationCount_ += iterations;
         }

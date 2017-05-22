@@ -14,6 +14,7 @@
 namespace viscom {
 
     class MeshRenderable;
+    class FullscreenQuad;
 
     struct SimulationData {
         /** The distance the simulation will be drawn at. */
@@ -89,12 +90,26 @@ namespace viscom {
         ApplicationNodeInternal* appNode_;
 
         /** The current local iteration count. */
-        std::uint64_t currentLocalIterationCount_;
+        std::uint64_t currentLocalIterationCount_ = 0;
         /** Holds the simulation data. */
         SimulationData simData_;
 
         /** Toggle switch for iteration step */
-        bool iteration_toggle_;
+        bool iterationToggle_ = true;
+        /** Uniform Location for texture sampler of previous iteration step */
+        GLint rdPrevIterationTextureLoc_ = -1;
+        GLint rdDiffusionRateALoc_ = -1;
+        GLint rdDiffusionRateBLoc_ = -1;
+        GLint rdFeedRateLoc_ = -1;
+        GLint rdKillRateLoc_ = -1;
+        GLint rdDtLoc_ = -1;
+        GLint rdSeedPointRadiusLoc_ = -1;
+        GLint rdNumSeedPointsLoc_ = -1;
+        GLint rdSeedPointsLoc_ = -1;
+        GLint rdUseManhattenDistanceLoc_ = -1;
+
+        /** Program to compute reaction diffusion step */
+        std::unique_ptr<FullscreenQuad> reactionDiffusionFullScreenQuad_;
 
         /** The frame buffer object for the simulation. */
         std::unique_ptr<FrameBuffer> reactDiffuseFBO_;
