@@ -26,7 +26,7 @@ namespace viscom {
         /** The absorption coefficient. */
         float sigma_a_ = 2.0f;
         /** The current global iteration count. */
-        std::uint64_t currentGlobalIterationCount_;
+        std::uint64_t currentGlobalIterationCount_ = 0;
     };
 
     class ApplicationNodeImplementation
@@ -78,12 +78,12 @@ namespace viscom {
         SimulationData& GetSimulationData() { return simData_; }
 
         /** The maximum iteration count per frame. */
-        static constexpr std::uint64_t MAX_FRAME_ITERATIONS = 10;
+        static constexpr std::uint64_t MAX_FRAME_ITERATIONS = 20;
 
         /** The simulation frame buffer size (x). */
-        static constexpr unsigned int SIMULATION_SIZE_X = 1920;
+        static constexpr unsigned int SIMULATION_SIZE_X = 1920/2;
         /** The simulation frame buffer size (y). */
-        static constexpr unsigned int SIMULATION_SIZE_Y = 1080;
+        static constexpr unsigned int SIMULATION_SIZE_Y = 1080/2;
 
     private:
         /** Holds the application node. */
@@ -98,6 +98,7 @@ namespace viscom {
         bool iterationToggle_ = true;
         /** Uniform Location for texture sampler of previous iteration step */
         GLint rdPrevIterationTextureLoc_ = -1;
+        GLint rdInvTexDimLoc_ = -1;
         GLint rdDiffusionRateALoc_ = -1;
         GLint rdDiffusionRateBLoc_ = -1;
         GLint rdFeedRateLoc_ = -1;
