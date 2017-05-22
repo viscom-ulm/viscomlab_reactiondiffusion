@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include <sgct/Engine.h>
 #include "core/ApplicationNodeInternal.h"
+#include "core/ApplicationNodeBase.h"
 
 namespace viscom {
 
@@ -28,7 +28,7 @@ namespace viscom {
         std::uint64_t currentGlobalIterationCount_;
     };
 
-    class ApplicationNodeImplementation
+    class ApplicationNodeImplementation : public ApplicationNodeBase
     {
     public:
         explicit ApplicationNodeImplementation(ApplicationNodeInternal* appNode);
@@ -36,42 +36,13 @@ namespace viscom {
         ApplicationNodeImplementation(ApplicationNodeImplementation&&) = delete;
         ApplicationNodeImplementation& operator=(const ApplicationNodeImplementation&) = delete;
         ApplicationNodeImplementation& operator=(ApplicationNodeImplementation&&) = delete;
-        virtual ~ApplicationNodeImplementation();
+        virtual ~ApplicationNodeImplementation() override;
 
-        virtual void PreWindow();
-        virtual void InitOpenGL();
-        virtual void PreSync();
-        virtual void UpdateSyncedInfo();
-        virtual void UpdateFrame(double currentTime, double elapsedTime);
-        virtual void ClearBuffer(FrameBuffer& fbo);
-        virtual void DrawFrame(FrameBuffer& fbo);
-        virtual void Draw2D(FrameBuffer& fbo);
-        virtual void PostDraw();
-        virtual void CleanUp();
-
-        virtual void KeyboardCallback(int key, int scancode, int action, int mods);
-        virtual void CharCallback(unsigned int character, int mods);
-        virtual void MouseButtonCallback(int button, int action);
-        virtual void MousePosCallback(double x, double y);
-        virtual void MouseScrollCallback(double xoffset, double yoffset);
-
-        virtual void EncodeData();
-        virtual void DecodeData();
-
-    protected:
-        sgct::Engine* GetEngine() const { return appNode_->GetEngine(); }
-        const FWConfiguration& GetConfig() const { return appNode_->GetConfig(); }
-        ApplicationNodeInternal* GetApplication() const { return appNode_; }
-
-        const Viewport& GetViewportScreen(size_t windowId) const { return appNode_->GetViewportScreen(windowId); }
-        Viewport& GetViewportScreen(size_t windowId) { return appNode_->GetViewportScreen(windowId); }
-        const glm::ivec2& GetViewportQuadSize(size_t windowId) const { return appNode_->GetViewportQuadSize(windowId); }
-        glm::ivec2& GetViewportQuadSize(size_t windowId) { return appNode_->GetViewportQuadSize(windowId); }
-        const glm::vec2& GetViewportScaling(size_t windowId) const { return appNode_->GetViewportScaling(windowId); }
-        glm::vec2& GetViewportScaling(size_t windowId) { return appNode_->GetViewportScaling(windowId); }
-
-        double GetCurrentAppTime() const { return appNode_->GetCurrentAppTime(); }
-        double GetElapsedTime() const { return appNode_->GetElapsedTime(); }
+        virtual void InitOpenGL() override;
+        virtual void UpdateFrame(double currentTime, double elapsedTime) override;
+        virtual void ClearBuffer(FrameBuffer& fbo) override;
+        virtual void DrawFrame(FrameBuffer& fbo) override;
+        virtual void CleanUp() override;
 
         std::uint64_t& GetCurrentLocalIterationCount() { return currentLocalIterationCount_; }
         SimulationData& GetSimulationData() { return simData_; }
@@ -85,9 +56,6 @@ namespace viscom {
         static constexpr unsigned int SIMULATION_SIZE_Y = 1080;
 
     private:
-        /** Holds the application node. */
-        ApplicationNodeInternal* appNode_;
-
         /** The current local iteration count. */
         std::uint64_t currentLocalIterationCount_;
         /** Holds the simulation data. */
@@ -95,7 +63,6 @@ namespace viscom {
 
         /** Toggle switch for iteration step */
         bool iteration_toggle_;
-
         /** The frame buffer object for the simulation. */
         std::unique_ptr<FrameBuffer> reactDiffuseFBO_;
         /** The frame buffer objects for the simulation height field back. */
@@ -141,10 +108,5 @@ namespace viscom {
         std::shared_ptr<Texture> backgroundTexture_;
         /** Holds the environment map texture. */
         std::shared_ptr<Texture> environmentMap_;
-
-#ifndef VISCOM_LOCAL_ONLY
-    protected:
-        unsigned int GetGlobalProjectorId(int nodeId, int windowId) const { return appNode_->GetGlobalProjectorId(nodeId, windowId); }
-#endif
     };
 }

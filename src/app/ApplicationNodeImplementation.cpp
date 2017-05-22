@@ -11,19 +11,19 @@
 #include <imgui.h>
 #include "core/gfx/mesh/MeshRenderable.h"
 #include "core/imgui/imgui_impl_glfw_gl3.h"
+#include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtc/quaternion.hpp>
+
+#undef max
 
 namespace viscom {
 
     ApplicationNodeImplementation::ApplicationNodeImplementation(ApplicationNodeInternal* appNode) :
-        appNode_{ appNode }
+        ApplicationNodeBase{ appNode }
     {
     }
 
     ApplicationNodeImplementation::~ApplicationNodeImplementation() = default;
-
-    void ApplicationNodeImplementation::PreWindow()
-    {
-    }
 
     void ApplicationNodeImplementation::InitOpenGL()
     {
@@ -45,11 +45,11 @@ namespace viscom {
         }
 
 
-        raycastBackProgram_ = appNode_->GetGPUProgramManager().GetResource("raycastHeightfieldBack", std::initializer_list<std::string>{ "raycastHeightfield.vert", "raycastHeightfieldBack.frag" });
+        raycastBackProgram_ = GetGPUProgramManager().GetResource("raycastHeightfieldBack", std::initializer_list<std::string>{ "raycastHeightfield.vert", "raycastHeightfieldBack.frag" });
         raycastBackVPLoc_ = raycastBackProgram_->getUniformLocation("viewProjectionMatrix");
         raycastBackQuadSizeLoc_ = raycastBackProgram_->getUniformLocation("quadSize");
         raycastBackDistanceLoc_ = raycastBackProgram_->getUniformLocation("distance");
-        raycastProgram_ = appNode_->GetGPUProgramManager().GetResource("raycastHeightfield", std::initializer_list<std::string>{ "raycastHeightfield.vert", "raycastHeightfield.frag" });
+        raycastProgram_ = GetGPUProgramManager().GetResource("raycastHeightfield", std::initializer_list<std::string>{ "raycastHeightfield.vert", "raycastHeightfield.frag" });
         raycastVPLoc_ = raycastProgram_->getUniformLocation("viewProjectionMatrix");
         raycastQuadSizeLoc_ = raycastProgram_->getUniformLocation("quadSize");
         raycastDistanceLoc_ = raycastProgram_->getUniformLocation("distance");
@@ -63,17 +63,10 @@ namespace viscom {
         raycastPositionBackTexLoc_ = raycastProgram_->getUniformLocation("backPositionTexture");
 
         glGenVertexArrays(1, &simDummyVAO_);
-        backgroundTexture_ = appNode_->GetTextureManager().GetResource("models/teapot/default.png");
-        environmentMap_ = appNode_->GetTextureManager().GetResource("textures/grace_probe.hdr");
+        backgroundTexture_ = GetTextureManager().GetResource("models/teapot/default.png");
+        environmentMap_ = GetTextureManager().GetResource("textures/grace_probe.hdr");
     }
 
-    void ApplicationNodeImplementation::PreSync()
-    {
-    }
-
-    void ApplicationNodeImplementation::UpdateSyncedInfo()
-    {
-    }
 
     void ApplicationNodeImplementation::UpdateFrame(double currentTime, double)
     {
@@ -167,7 +160,7 @@ namespace viscom {
             /*glBindVertexArray(vaoBackgroundGrid_);
             glBindBuffer(GL_ARRAY_BUFFER, vboBackgroundGrid_);
 
-            auto MVP = GetEngine()->getCurrentModelViewProjectionMatrix();
+            auto MVP = GetCamera()->GetViewPerspectiveMatrix();
             {
                 glUseProgram(backgroundProgram_->getProgramId());
                 glUniformMatrix4fv(backgroundMVPLoc_, 1, GL_FALSE, glm::value_ptr(MVP));
@@ -185,6 +178,9 @@ namespace viscom {
 
             {
                 glUseProgram(teapotProgram_->getProgramId());
+                auto normalMatrix = glm::inverseTranspose(glm::mat3(teapotModelMatrix_));
+                glUniformMatrix4fv(teapotModelMLoc_, 1, GL_FALSE, glm::value_ptr(teapotModelMatrix_));
+                glUniformMatrix4fv(teapotNormalMLoc_, 1, GL_FALSE, glm::value_ptr(normalMatrix));
                 glUniformMatrix4fv(teapotVPLoc_, 1, GL_FALSE, glm::value_ptr(MVP));
                 teapotRenderable_->Draw(teapotModelMatrix_);
             }
@@ -195,64 +191,10 @@ namespace viscom {
         });
     }
 
-    void ApplicationNodeImplementation::Draw2D(FrameBuffer& fbo)
-    {
-        fbo.DrawToFBO([]() {
-        });
-    }
-
-    void ApplicationNodeImplementation::PostDraw()
-    {
-    }
-
     void ApplicationNodeImplementation::CleanUp()
     {
         if (simDummyVAO_ != 0) glDeleteVertexArrays(1, &simDummyVAO_);
         simDummyVAO_ = 0;
     }
 
-    // ReSharper disable CppParameterNeverUsed
-    void ApplicationNodeImplementation::KeyboardCallback(int key, int scancode, int action, int mods)
-    {
-#ifdef VISCOM_CLIENTGUI
-        ImGui_ImplGlfwGL3_KeyCallback(key, scancode, action, mods);
-#endif
-    }
-
-    void ApplicationNodeImplementation::CharCallback(unsigned int character, int mods)
-    {
-#ifdef VISCOM_CLIENTGUI
-        ImGui_ImplGlfwGL3_CharCallback(character);
-#endif
-    }
-
-    void ApplicationNodeImplementation::MouseButtonCallback(int button, int action)
-    {
-#ifdef VISCOM_CLIENTGUI
-        ImGui_ImplGlfwGL3_MouseButtonCallback(button, action, 0);
-#endif
-    }
-
-    void ApplicationNodeImplementation::MousePosCallback(double x, double y)
-    {
-#ifdef VISCOM_CLIENTGUI
-        ImGui_ImplGlfwGL3_MousePositionCallback(x, y);
-#endif
-    }
-
-    void ApplicationNodeImplementation::MouseScrollCallback(double xoffset, double yoffset)
-    {
-#ifdef VISCOM_CLIENTGUI
-        ImGui_ImplGlfwGL3_ScrollCallback(xoffset, yoffset);
-#endif
-    }
-    // ReSharper restore CppParameterNeverUsed
-
-    void ApplicationNodeImplementation::EncodeData()
-    {
-    }
-
-    void ApplicationNodeImplementation::DecodeData()
-    {
-    }
 }
