@@ -126,7 +126,7 @@ namespace viscom {
 
         fbo.DrawToFBO([this, &perspectiveMatrix]() {
             {
-                glm::vec3 camPos(0.0f);
+                glm::vec3 camPos = GetCamera()->GetPosition();
                 glBindVertexArray(simDummyVAO_);
                 glUseProgram(raycastProgram_->getProgramId());
                 glUniformMatrix4fv(raycastVPLoc_, 1, GL_FALSE, glm::value_ptr(perspectiveMatrix));
