@@ -92,6 +92,9 @@ namespace viscom {
             }
             currentLocalIterationCount_ += iterations;
         }
+
+        auto perspectiveMatrix = GetCamera()->GetCentralPerspectiveMatrix();
+        simulationOutputSize_ = glm::vec2(simData_.simulationDrawDistance_) / glm::vec2(perspectiveMatrix[0][0], perspectiveMatrix[1][1]);
     }
 
     void ApplicationNodeImplementation::ClearBuffer(FrameBuffer& fbo)
@@ -110,27 +113,24 @@ namespace viscom {
 
     void ApplicationNodeImplementation::DrawFrame(FrameBuffer& fbo)
     {
-        auto perspectiveMatrix = GetEngine()->getCurrentProjectionMatrix();
-        glm::vec2 simulationSize(simData_.simulationDrawDistance_);
-        simulationSize /= glm::vec2(perspectiveMatrix[0][0], perspectiveMatrix[1][1]);
+        auto perspectiveMatrix = GetCamera()->GetViewPerspectiveMatrix();
 
-        auto windowId = GetEngine()->getCurrentWindowPtr()->getId();
-        simulationBackFBOs_[windowId].DrawToFBO([this, &perspectiveMatrix, &simulationSize]() {
+        SelectOffscreenBuffer(simulationBackFBOs_)->DrawToFBO([this, &perspectiveMatrix]() {
             glBindVertexArray(simDummyVAO_);
             glUseProgram(raycastBackProgram_->getProgramId());
             glUniformMatrix4fv(raycastBackVPLoc_, 1, GL_FALSE, glm::value_ptr(perspectiveMatrix));
-            glUniform2fv(raycastBackQuadSizeLoc_, 1, glm::value_ptr(simulationSize));
+            glUniform2fv(raycastBackQuadSizeLoc_, 1, glm::value_ptr(simulationOutputSize_));
             glUniform1f(raycastBackDistanceLoc_, simData_.simulationDrawDistance_);
             glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         });
 
-        fbo.DrawToFBO([this, &perspectiveMatrix, &simulationSize, windowId]() {
+        fbo.DrawToFBO([this, &perspectiveMatrix]() {
             {
                 glm::vec3 camPos(0.0f);
                 glBindVertexArray(simDummyVAO_);
                 glUseProgram(raycastProgram_->getProgramId());
                 glUniformMatrix4fv(raycastVPLoc_, 1, GL_FALSE, glm::value_ptr(perspectiveMatrix));
-                glUniform2fv(raycastQuadSizeLoc_, 1, glm::value_ptr(simulationSize));
+                glUniform2fv(raycastQuadSizeLoc_, 1, glm::value_ptr(simulationOutputSize_));
                 glUniform1f(raycastDistanceLoc_, simData_.simulationDrawDistance_ - simData_.simulationHeight_);
                 glUniform1f(raycastSimHeightLoc_, simData_.simulationHeight_);
                 glUniform3fv(raycastCamPosLoc_, 1, glm::value_ptr(camPos));
@@ -149,7 +149,7 @@ namespace viscom {
                 glBindTexture(GL_TEXTURE_2D, backgroundTexture_->getTextureId());
                 glUniform1i(raycastHeightTextureLoc_, 2);
 
-                glBindImageTexture(0, simulationBackFBOs_[windowId].GetTextures()[0], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG32F);
+                glBindImageTexture(0, SelectOffscreenBuffer(simulationBackFBOs_)->GetTextures()[0], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG32F);
                 glUniform1i(raycastPositionBackTexLoc_, 0);
 
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);

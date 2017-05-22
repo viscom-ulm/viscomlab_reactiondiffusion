@@ -68,6 +68,9 @@ namespace viscom {
         /** The frame buffer objects for the simulation height field back. */
         std::vector<FrameBuffer> simulationBackFBOs_;
 
+        /** Output size of the simulation. */
+        glm::vec2 simulationOutputSize_;
+
         /** Holds the shader program for raycasting the height field back side. */
         std::shared_ptr<GPUProgram> raycastBackProgram_;
         /** Holds the location of the VP matrix. */
