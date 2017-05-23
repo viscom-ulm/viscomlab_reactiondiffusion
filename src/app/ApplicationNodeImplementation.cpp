@@ -131,12 +131,12 @@ namespace viscom {
                 glUniform1f(rdKillRateLoc_, 0.062f);
                 glUniform1f(rdDtLoc_, 1.0f);
                 glUniform1f(rdSeedPointRadiusLoc_, 0.1f);
-                std::vector<glm::vec2> seedPts; // TODO: get touch/mouse input here
+                rdSeedPoints.clear();
                 if (currentLocalIterationCount_ == 0) {
-                    seedPts.emplace_back(0.5f, 0.5f); // TODO: remove later, only a test point
+                    rdSeedPoints.emplace_back(0.25f, 0.25f); // TODO: remove later, only a test point
                 }
-                glUniform1ui(rdNumSeedPointsLoc_, static_cast<GLuint>(seedPts.size()));
-                glUniform2fv(rdSeedPointsLoc_, static_cast<GLsizei>(seedPts.size()), reinterpret_cast<const GLfloat*>(seedPts.data()));
+                glUniform1ui(rdNumSeedPointsLoc_, static_cast<GLuint>(rdSeedPoints.size()));
+                glUniform2fv(rdSeedPointsLoc_, static_cast<GLsizei>(rdSeedPoints.size()), reinterpret_cast<const GLfloat*>(rdSeedPoints.data()));
                 glUniform1i(rdUseManhattenDistanceLoc_, true);
 
                 // simulate

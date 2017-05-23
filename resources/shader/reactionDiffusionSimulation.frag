@@ -55,13 +55,15 @@ vec2 laplaceAB() // vec2 laplaceAB(vec2 inv_tex_dim)
 
 void main()
 {
-    //const vec2 inv_tex_dim = 1.0 / textureSize(texture_0, 0).xy;
+    const vec2 tex_dim = textureSize(texture_0, 0).xy;
+    //const vec2 inv_tex_dim = 1.0 / tex_dim;
     const vec2 AB = texture(texture_0, texCoord).rg;
     const float A = AB.r;
     float B = AB.g; // TODO: add const here when brush shader is available
 
     for (int i = 0; i < num_seed_points; ++i) {
-        const vec2 seed_point = abs(texCoord - seed_points[i]);
+        vec2 seed_point = abs(texCoord - seed_points[i]);
+        seed_point.x *= tex_dim.x / tex_dim.y; // fix aspect ratio
         if (use_manhatten_distance) {
             const float d = seed_point.x + seed_point.y;
             if (d < seed_point_radius) {

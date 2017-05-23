@@ -81,9 +81,9 @@ namespace viscom {
         static constexpr std::uint64_t MAX_FRAME_ITERATIONS = 20;
 
         /** The simulation frame buffer size (x). */
-        static constexpr unsigned int SIMULATION_SIZE_X = 1920/2;
+        static constexpr unsigned int SIMULATION_SIZE_X = 1920;
         /** The simulation frame buffer size (y). */
-        static constexpr unsigned int SIMULATION_SIZE_Y = 1080/2;
+        static constexpr unsigned int SIMULATION_SIZE_Y = 1080;
 
     private:
         /** Holds the application node. */
@@ -96,6 +96,8 @@ namespace viscom {
 
         /** Toggle switch for iteration step */
         bool iterationToggle_ = true;
+        /** seed points to draw into simulation */
+        std::vector<glm::vec2> rdSeedPoints;
         /** Uniform Location for texture sampler of previous iteration step */
         GLint rdPrevIterationTextureLoc_ = -1;
         GLint rdDiffusionRateALoc_ = -1;
