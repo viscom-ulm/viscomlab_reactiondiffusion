@@ -45,11 +45,15 @@ namespace viscom {
         virtual void DrawFrame(FrameBuffer& fbo) override;
         virtual void CleanUp() override;
 
+        virtual bool MouseButtonCallback(int button, int action) override;
+        virtual bool MousePosCallback(double x, double y) override;
+
         std::uint64_t& GetCurrentLocalIterationCount() { return currentLocalIterationCount_; }
         SimulationData& GetSimulationData() { return simData_; }
+        void ResetSimulation() const;
 
         /** The maximum iteration count per frame. */
-        static constexpr std::uint64_t MAX_FRAME_ITERATIONS = 20;
+        static constexpr std::uint64_t MAX_FRAME_ITERATIONS = 5;
 
         /** The simulation frame buffer size (x). */
         static constexpr unsigned int SIMULATION_SIZE_X = 1920;
@@ -66,6 +70,12 @@ namespace viscom {
         bool iterationToggle_ = true;
         /** seed points to draw into simulation */
         std::vector<glm::vec2> rdSeedPoints;
+        /** store mouse position for seed point generation */
+        glm::vec2 currentCursorPosition = glm::vec2{0.0f};
+        /** store mouse button state */
+        int currentMouseAction = -1;
+        int currentMouseButton = -1;
+
         /** Uniform Location for texture sampler of previous iteration step */
         GLint rdPrevIterationTextureLoc_ = -1;
         GLint rdDiffusionRateALoc_ = -1;

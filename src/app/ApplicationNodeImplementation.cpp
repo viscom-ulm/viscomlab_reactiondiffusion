@@ -37,7 +37,6 @@ namespace viscom {
         reactDiffuseFBDesc.texDesc_.emplace_back(GL_R32F, GL_TEXTURE_2D);
         reactDiffuseFBO_ = std::make_unique<FrameBuffer>(SIMULATION_SIZE_X, SIMULATION_SIZE_Y, reactDiffuseFBDesc);
 
-
         FrameBufferDescriptor simulationBackFBDesc;
         simulationBackFBDesc.texDesc_.emplace_back(GL_RG32F, GL_TEXTURE_2D);
         simulationBackFBDesc.rbDesc_.emplace_back(GL_DEPTH_COMPONENT32);
@@ -47,7 +46,6 @@ namespace viscom {
             auto fboSize = GetViewportQuadSize(i);
             simulationBackFBOs_.emplace_back(fboSize.x, fboSize.y, simulationBackFBDesc);
         }
-
 
         raycastBackProgram_ = GetGPUProgramManager().GetResource("raycastHeightfieldBack", std::initializer_list<std::string>{ "raycastHeightfield.vert", "raycastHeightfieldBack.frag" });
         raycastBackVPLoc_ = raycastBackProgram_->getUniformLocation("viewProjectionMatrix");
@@ -79,22 +77,13 @@ namespace viscom {
         rdSeedPointsLoc_ = rdGpuProgram->getUniformLocation("seed_points");
         rdUseManhattenDistanceLoc_ = rdGpuProgram->getUniformLocation("use_manhatten_distance");
 
-        // clear A and B, {0, 1}
-        reactDiffuseFBO_->DrawToFBO({0, 1}, []() {
-            glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT);
-        });
-        // clear mixed result, {2}
-        reactDiffuseFBO_->DrawToFBO({2}, []() {
-            glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT);
-        });
+        rdSeedPoints.clear();
+        ResetSimulation();
 
         glGenVertexArrays(1, &simDummyVAO_);
         backgroundTexture_ = GetTextureManager().GetResource("models/teapot/default.png");
         environmentMap_ = GetTextureManager().GetResource("textures/grace_probe.hdr");
     }
-
 
     void ApplicationNodeImplementation::UpdateFrame(double currentTime, double)
     {
@@ -102,7 +91,20 @@ namespace viscom {
         static const std::vector<unsigned int> drawBuffers1{{1, 2}};
 
         if (currentLocalIterationCount_ < simData_.currentGlobalIterationCount_) {
+            if (currentMouseButton == GLFW_MOUSE_BUTTON_1 && currentMouseAction == GLFW_PRESS) {
+                rdSeedPoints.clear();
+                const float x = currentCursorPosition.x;
+                const float y = currentCursorPosition.y;
+                rdSeedPoints.emplace_back(x, 1.0 - y);
+                //rdSeedPoints.emplace_back(1.0 - x, y);
+                //rdSeedPoints.emplace_back(x, y);
+                //rdSeedPoints.emplace_back(1.0 - x, 1.0 - y);
+            } else if (currentMouseButton == GLFW_MOUSE_BUTTON_2 && currentMouseAction == GLFW_PRESS) {
+                ResetSimulation();
+            }
+
             auto iterations = glm::min(simData_.currentGlobalIterationCount_ - currentLocalIterationCount_, MAX_FRAME_ITERATIONS);
+
             for (std::uint64_t i = 0; i < iterations; ++i) {
                 const std::vector<unsigned int>* currentDrawBuffers{nullptr};
                 glActiveTexture(GL_TEXTURE0);
@@ -124,14 +126,13 @@ namespace viscom {
                 glUniform1f(rdFeedRateLoc_, 0.055f);
                 glUniform1f(rdKillRateLoc_, 0.062f);
                 glUniform1f(rdDtLoc_, 1.0f);
-                glUniform1f(rdSeedPointRadiusLoc_, 0.1f);
-                rdSeedPoints.clear();
-                if (currentLocalIterationCount_ == 0) {
-                    rdSeedPoints.emplace_back(0.25f, 0.25f); // TODO: remove later, only a test point
-                }
+                glUniform1f(rdSeedPointRadiusLoc_, 0.025f);
                 glUniform1ui(rdNumSeedPointsLoc_, static_cast<GLuint>(rdSeedPoints.size()));
                 glUniform2fv(rdSeedPointsLoc_, static_cast<GLsizei>(rdSeedPoints.size()), reinterpret_cast<const GLfloat*>(rdSeedPoints.data()));
                 glUniform1i(rdUseManhattenDistanceLoc_, true);
+
+                // clear seed points after they were applied
+                rdSeedPoints.clear();
 
                 // simulate
                 reactDiffuseFBO_->DrawToFBO(*currentDrawBuffers, [this]() {
@@ -143,6 +144,21 @@ namespace viscom {
 
         auto perspectiveMatrix = GetCamera()->GetCentralPerspectiveMatrix();
         simulationOutputSize_ = glm::vec2(simData_.simulationDrawDistance_) / glm::vec2(perspectiveMatrix[0][0], perspectiveMatrix[1][1]);
+    }
+
+    void ApplicationNodeImplementation::ResetSimulation() const
+    {
+        // clear A and B, {0, 1}
+        reactDiffuseFBO_->DrawToFBO({0, 1}, []() {
+            glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+        });
+
+        // clear mixed result, {2}
+        reactDiffuseFBO_->DrawToFBO({2}, []() {
+            glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+        });
     }
 
     void ApplicationNodeImplementation::ClearBuffer(FrameBuffer& fbo)
@@ -203,38 +219,6 @@ namespace viscom {
 
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
             }
-
-            /*glBindVertexArray(vaoBackgroundGrid_);
-            glBindBuffer(GL_ARRAY_BUFFER, vboBackgroundGrid_);
-
-            auto MVP = GetCamera()->GetViewPerspectiveMatrix();
-            {
-                glUseProgram(backgroundProgram_->getProgramId());
-                glUniformMatrix4fv(backgroundMVPLoc_, 1, GL_FALSE, glm::value_ptr(MVP));
-                glDrawArrays(GL_TRIANGLES, 0, numBackgroundVertices_);
-            }
-
-            {
-                glDisable(GL_CULL_FACE);
-                auto triangleMVP = MVP * triangleModelMatrix_;
-                glUseProgram(triangleProgram_->getProgramId());
-                glUniformMatrix4fv(triangleMVPLoc_, 1, GL_FALSE, glm::value_ptr(triangleMVP));
-                glDrawArrays(GL_TRIANGLES, numBackgroundVertices_, 3);
-                glEnable(GL_CULL_FACE);
-            }
-
-            {
-                glUseProgram(teapotProgram_->getProgramId());
-                auto normalMatrix = glm::inverseTranspose(glm::mat3(teapotModelMatrix_));
-                glUniformMatrix4fv(teapotModelMLoc_, 1, GL_FALSE, glm::value_ptr(teapotModelMatrix_));
-                glUniformMatrix4fv(teapotNormalMLoc_, 1, GL_FALSE, glm::value_ptr(normalMatrix));
-                glUniformMatrix4fv(teapotVPLoc_, 1, GL_FALSE, glm::value_ptr(MVP));
-                teapotRenderable_->Draw(teapotModelMatrix_);
-            }
-
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-            glBindVertexArray(0);
-            glUseProgram(0);*/
         });
     }
 
@@ -242,6 +226,29 @@ namespace viscom {
     {
         if (simDummyVAO_ != 0) glDeleteVertexArrays(1, &simDummyVAO_);
         simDummyVAO_ = 0;
+    }
+
+    bool ApplicationNodeImplementation::MouseButtonCallback(int button, int action)
+    {
+        bool event_handeled{false};
+
+        if (!ApplicationNodeBase::MouseButtonCallback(button, action)) {
+            currentMouseAction = action;
+            currentMouseButton = button;
+        }
+
+        return event_handeled;
+    }
+
+    bool ApplicationNodeImplementation::MousePosCallback(double x, double y)
+    {
+        bool event_handeled{false};
+
+        if (!ApplicationNodeBase::MousePosCallback(x, y)) {
+            currentCursorPosition = glm::vec2{x, y};
+        }
+
+        return event_handeled;
     }
 
 }
