@@ -18,5 +18,5 @@ void main()
 {
     texCoord = 0.5 * (vec2(1.0) + pos_data[ gl_VertexID ]);
     vec4 position = vec4( quadSize * pos_data[ gl_VertexID ], -distance, 1.0 );
-    gl_Position = viewProjectionMatrix * (position);// - vec4(0.5, 0.5, 0, 0));
+    gl_Position = viewProjectionMatrix * (position);
 }

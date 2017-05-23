@@ -46,19 +46,19 @@ float heightField(vec2 texCoords) {
 }
 
 vec3 heightfieldNormal(vec3 p) {
-    const vec2 deltaX = vec2(0.000001, 0.0);
-    const vec2 deltaY = vec2(0.0, 0.000001);
+    const vec2 deltaX = vec2(0.00002, 0.0);
+    const vec2 deltaY = vec2(0.0, 0.00002);
 
     vec3 dx0 = vec3(p.xy - deltaX, heightField(p.xy - deltaX));
     vec3 dx1 = vec3(p.xy + deltaX, heightField(p.xy + deltaX));
-    //vec3 tDX = dx1 - dx0;
+    vec3 tDX = dx1 - dx0;
 
     vec3 dy0 = vec3(p.xy - deltaY, heightField(p.xy - deltaY));
     vec3 dy1 = vec3(p.xy + deltaY, heightField(p.xy + deltaY));
-    //vec3 tDY = dy1 - dy0;
+    vec3 tDY = dy1 - dy0;
 
-    vec3 tDX = dFdx(p);
-    vec3 tDY = dFdy(p);
+    // vec3 tDX = dFdx(p);
+    // vec3 tDY = dFdy(p);
     return normalize(cross(tDX, tDY));
 }
 
@@ -111,5 +111,5 @@ void main()
     // color = vec4(t.x, t.y, h, 1);
     // vec3 t = refract(v, normal, eta);
 
-    //color = vec4(texture(heightTexture, t0.xy).rrr, 1.0);
+    // color = vec4(texture(heightTexture, t0.xy).rrr, 1.0);
 }

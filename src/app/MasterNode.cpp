@@ -50,7 +50,7 @@ namespace viscom {
             ImGui::Begin("Simulation Parameters");
             {
                 ImGui::SliderFloat("Draw Distance", &GetSimulationData().simulationDrawDistance_, 5.0f, 20.0f);
-                ImGui::SliderFloat("Height", &GetSimulationData().simulationHeight_, 0.1f, 1.0f);
+                ImGui::SliderFloat("Height", &GetSimulationData().simulationHeight_, 0.01f, 0.3f);
                 ImGui::SliderFloat("Eta", &GetSimulationData().eta_, 1.0f, 5.0f);
                 ImGui::SliderFloat("Absorption", &GetSimulationData().sigma_a_, 0.5f, 5.0f);
             }
