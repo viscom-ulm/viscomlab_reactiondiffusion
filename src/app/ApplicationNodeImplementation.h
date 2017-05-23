@@ -20,11 +20,11 @@ namespace viscom {
         /** The distance the simulation will be drawn at. */
         float simulationDrawDistance_ = 15.0f;
         /** The simulation height field height. */
-        float simulationHeight_ = 0.1f;
+        float simulationHeight_ = 0.01f;
         /** The relative index of refraction used for raycasting. */
         float eta_ = 1.5f;
         /** The absorption coefficient. */
-        float sigma_a_ = 2.0f;
+        glm::vec3 sigma_a_ = glm::vec3(2.0f);
         /** The current global iteration count. */
         std::uint64_t currentGlobalIterationCount_ = 0;
     };
@@ -56,9 +56,9 @@ namespace viscom {
         static constexpr std::uint64_t MAX_FRAME_ITERATIONS = 5;
 
         /** The simulation frame buffer size (x). */
-        static constexpr unsigned int SIMULATION_SIZE_X = 1920;
+        static constexpr unsigned int SIMULATION_SIZE_X = 1920 / 6;
         /** The simulation frame buffer size (y). */
-        static constexpr unsigned int SIMULATION_SIZE_Y = 1080;
+        static constexpr unsigned int SIMULATION_SIZE_Y = 1080 / 6;
 
     private:
         /** The current local iteration count. */

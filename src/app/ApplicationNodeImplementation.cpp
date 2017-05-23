@@ -200,7 +200,7 @@ namespace viscom {
                 glUniform1f(raycastSimHeightLoc_, simData_.simulationHeight_);
                 glUniform3fv(raycastCamPosLoc_, 1, glm::value_ptr(camPos));
                 glUniform1f(raycastEtaLoc_, simData_.eta_);
-                glUniform1f(raycastSigmaALoc_, simData_.sigma_a_);
+                glUniform3fv(raycastSigmaALoc_, 1, glm::value_ptr(simData_.sigma_a_));
 
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, environmentMap_->getTextureId());
@@ -211,7 +211,6 @@ namespace viscom {
                 glUniform1i(raycastBGTexLoc_, 1);
 
                 glActiveTexture(GL_TEXTURE0 + 2);
-                //glBindTexture(GL_TEXTURE_2D, backgroundTexture_->getTextureId());
                 glBindTexture(GL_TEXTURE_2D, reactDiffuseFBO_->GetTextures()[2]);
                 glUniform1i(raycastHeightTextureLoc_, 2);
 

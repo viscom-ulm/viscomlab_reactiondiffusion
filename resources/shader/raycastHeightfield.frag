@@ -9,7 +9,7 @@ uniform float distance;
 uniform float simulationHeight;
 uniform vec3 cameraPosition;
 uniform float eta;
-uniform float sigma_a;
+uniform vec3 sigma_a;
 uniform sampler2D environment;
 uniform sampler2D backgroundTexture;
 uniform sampler2D heightTexture;
@@ -18,8 +18,8 @@ layout(rg32f) uniform image2D backPositionTexture;
 layout(location = 0) out vec4 color;
 
 vec3 worldToTex(vec3 x) {
-    vec3 offset = vec3(quadSize, distance + simulationHeight);
-    vec3 scale = 1.0 / vec3(2.0 * quadSize, simulationHeight);
+    vec3 offset = vec3(quadSize, distance + 1.0f);
+    vec3 scale = 1.0 / vec3(2.0 * quadSize, 1.0f);
     return (x + offset) * scale;
 }
 
@@ -37,7 +37,7 @@ float heightFieldSphere(vec2 texCoords, vec2 c, float r) {
 }
 
 float heightField(vec2 texCoords) {
-    return texture(heightTexture, texCoords).r;
+    return simulationHeight * texture(heightTexture, texCoords).r;
     //return (4.0 * heightFieldSphere(texCoords, vec2(0.5), 0.25))
     //    + (5.0 * heightFieldSphere(texCoords, vec2(0.12, 0.12), 0.09))
     //    + (5.0 * heightFieldSphere(texCoords, vec2(0.12, 0.88), 0.09))
@@ -46,8 +46,9 @@ float heightField(vec2 texCoords) {
 }
 
 vec3 heightfieldNormal(vec3 p) {
-    const vec2 deltaX = vec2(0.00002, 0.0);
-    const vec2 deltaY = vec2(0.0, 0.00002);
+    const vec2 delta = 1.0f / vec2(textureSize(heightTexture, 0));
+    const vec2 deltaX = vec2(delta.x, 0.0);
+    const vec2 deltaY = vec2(0.0, delta.y);
 
     vec3 dx0 = vec3(p.xy - deltaX, heightField(p.xy - deltaX));
     vec3 dx1 = vec3(p.xy + deltaX, heightField(p.xy + deltaX));
@@ -93,15 +94,15 @@ void main()
     vec3 rr = normalize(reflect(v, normal));
     vec3 rt = normalize(refract(v, normal, 1.0 / eta));
     vec3 bgHit = (t.z / rt.z)*rt;
-    float bgHitLen = dot(bgHit, bgHit);
+    float bgHitLen = length(bgHit);
     vec2 bgCoords = (t - bgHit).xy;
     vec2 sphereCoords = reflectionToSpherical(rr);
 
     vec3 cReflection = texture(environment, sphereCoords).rgb;
     vec3 cRefraction = texture(backgroundTexture, bgCoords).rgb;
 
-    float R = reflectivity(normal, -v);
-    float T = (1.0 - R) * exp(-sigma_a * bgHitLen);
+    float R = 2*reflectivity(normal, -v);
+    vec3 T = (1.0 - R) * exp(-sigma_a * bgHitLen);
 
     color = vec4(sqrt(R * cReflection + T * cRefraction), 1.0);
     
