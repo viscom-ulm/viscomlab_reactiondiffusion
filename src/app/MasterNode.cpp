@@ -53,9 +53,9 @@ namespace viscom {
                     ImGui::SliderFloat("Draw Distance", &GetSimulationData().simulationDrawDistance_, 5.0f, 20.0f);
                     ImGui::SliderFloat("Height", &GetSimulationData().simulationHeight_, 0.02f, 0.5f);
                     ImGui::SliderFloat("Eta", &GetSimulationData().eta_, 1.0f, 5.0f);
-                    ImGui::SliderFloat("Absorption Red", &GetSimulationData().sigma_a_.r, 0.5f, 5.0f);
-                    ImGui::SliderFloat("Absorption Green", &GetSimulationData().sigma_a_.g, 0.5f, 5.0f);
-                    ImGui::SliderFloat("Absorption Blue", &GetSimulationData().sigma_a_.b, 0.5f, 5.0f);
+                    ImGui::SliderFloat("Absorption Red", &GetSimulationData().sigma_a_.r, 0.01f, 10.0f);
+                    ImGui::SliderFloat("Absorption Green", &GetSimulationData().sigma_a_.g, 0.01f,10.0f);
+                    ImGui::SliderFloat("Absorption Blue", &GetSimulationData().sigma_a_.b, 0.01f, 10.0f);
                     ImGui::TreePop();
                 }
             }

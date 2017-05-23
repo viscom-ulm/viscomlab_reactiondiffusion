@@ -101,7 +101,7 @@ void main()
     vec3 cReflection = texture(environment, sphereCoords).rgb;
     vec3 cRefraction = texture(backgroundTexture, bgCoords).rgb;
 
-    float R = 2*reflectivity(normal, -v);
+    float R = reflectivity(normal, -v);
     vec3 T = (1.0 - R) * exp(-sigma_a * bgHitLen);
 
     color = vec4(sqrt(R * cReflection + T * cRefraction), 1.0);
