@@ -10,7 +10,7 @@ layout(location = 1) out vec4 result;
 // uniforms
 uniform sampler2D texture_0;
 
-uniform vec2 inv_tex_dim;
+//uniform vec2 inv_tex_dim;
 
 uniform float diffusion_rate_A = 1.0;
 uniform float diffusion_rate_B = 0.5;
@@ -24,27 +24,38 @@ const uint max_seed_points = 10;
 uniform vec2 seed_points[max_seed_points];
 uniform bool use_manhatten_distance = false;
 
-vec2 laplaceAB()
+vec2 laplaceAB() // vec2 laplaceAB(vec2 inv_tex_dim)
 {
-    //0.0500    0.2000    0.0500
-    //0.2000   -1.0000    0.2000
-    //0.0500    0.2000    0.0500
+    // 0.0500    0.2000    0.0500
+    // 0.2000   -1.0000    0.2000
+    // 0.0500    0.2000    0.0500
 
-    const float inv_tex_dim_x = inv_tex_dim.x;
-    const float inv_tex_dim_y = inv_tex_dim.y;
-    return 0.05 * texture(texture_0, texCoord + vec2(-inv_tex_dim_x, inv_tex_dim_y)).rg // upper line
-         + 0.20 * texture(texture_0, texCoord + vec2(0.0, inv_tex_dim_y)).rg
-         + 0.05 * texture(texture_0, texCoord + vec2(inv_tex_dim_x, inv_tex_dim_y)).rg
-         + 0.20 * texture(texture_0, texCoord + vec2(-inv_tex_dim_x, 0.0)).rg // middle line
-         -        texture(texture_0, texCoord).rg
-         + 0.20 * texture(texture_0, texCoord + vec2(inv_tex_dim_x, 0.0)).rg
-         + 0.05 * texture(texture_0, texCoord + vec2(-inv_tex_dim_x, -inv_tex_dim_y)).rg // lower line
-         + 0.20 * texture(texture_0, texCoord + vec2(0.0, -inv_tex_dim_y)).rg
-         + 0.05 * texture(texture_0, texCoord + vec2(inv_tex_dim_x, -inv_tex_dim_y)).rg;
+    //const float inv_tex_dim_x = inv_tex_dim.x;
+    //const float inv_tex_dim_y = inv_tex_dim.y;
+    //return 0.05 * texture(texture_0, texCoord + vec2(-inv_tex_dim_x, inv_tex_dim_y)).rg // upper line
+    //     + 0.20 * texture(texture_0, texCoord + vec2(0.0, inv_tex_dim_y)).rg
+    //     + 0.05 * texture(texture_0, texCoord + vec2(inv_tex_dim_x, inv_tex_dim_y)).rg
+    //     + 0.20 * texture(texture_0, texCoord + vec2(-inv_tex_dim_x, 0.0)).rg // middle line
+    //     -        texture(texture_0, texCoord).rg
+    //     + 0.20 * texture(texture_0, texCoord + vec2(inv_tex_dim_x, 0.0)).rg
+    //     + 0.05 * texture(texture_0, texCoord + vec2(-inv_tex_dim_x, -inv_tex_dim_y)).rg // lower line
+    //     + 0.20 * texture(texture_0, texCoord + vec2(0.0, -inv_tex_dim_y)).rg
+    //     + 0.05 * texture(texture_0, texCoord + vec2(inv_tex_dim_x, -inv_tex_dim_y)).rg;
+
+    return 0.05 * textureOffset(texture_0, texCoord, ivec2(-1,  1)).rg // upper line
+         + 0.20 * textureOffset(texture_0, texCoord, ivec2( 0,  1)).rg
+         + 0.05 * textureOffset(texture_0, texCoord, ivec2( 1,  1)).rg
+         + 0.20 * textureOffset(texture_0, texCoord, ivec2(-1,  0)).rg // middle line
+         -        textureOffset(texture_0, texCoord, ivec2( 0,  0)).rg
+         + 0.20 * textureOffset(texture_0, texCoord, ivec2( 1,  0)).rg
+         + 0.05 * textureOffset(texture_0, texCoord, ivec2(-1, -1)).rg // lower line
+         + 0.20 * textureOffset(texture_0, texCoord, ivec2( 0, -1)).rg
+         + 0.05 * textureOffset(texture_0, texCoord, ivec2( 1, -1)).rg;
 }
 
 void main()
 {
+    //const vec2 inv_tex_dim = 1.0 / textureSize(texture_0, 0).xy;
     const vec2 AB = texture(texture_0, texCoord).rg;
     const float A = AB.r;
     float B = AB.g; // TODO: add const here when brush shader is available

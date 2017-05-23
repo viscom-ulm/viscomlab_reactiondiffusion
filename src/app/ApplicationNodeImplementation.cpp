@@ -68,7 +68,6 @@ namespace viscom {
         reactionDiffusionFullScreenQuad_ = std::make_unique<FullscreenQuad>("reactionDiffusionSimulation.frag", appNode_);
         const auto rdGpuProgram = reactionDiffusionFullScreenQuad_->GetGPUProgram();
         rdPrevIterationTextureLoc_ = rdGpuProgram->getUniformLocation("texture_0");
-        rdInvTexDimLoc_ = rdGpuProgram->getUniformLocation("inv_tex_dim");
         rdDiffusionRateALoc_ = rdGpuProgram->getUniformLocation("diffusion_rate_A");
         rdDiffusionRateBLoc_ = rdGpuProgram->getUniformLocation("diffusion_rate_B");
         rdFeedRateLoc_ = rdGpuProgram->getUniformLocation("feed_rate");
@@ -126,7 +125,6 @@ namespace viscom {
                 glUseProgram(rdGpuProgram->getProgramId());
                 glUniform1i(rdPrevIterationTextureLoc_, 0);
                 const glm::vec2 inv_tex_dim = 1.0f / glm::vec2{reactDiffuseFBO_->GetWidth(), reactDiffuseFBO_->GetHeight()};
-                glUniform2fv(rdInvTexDimLoc_, 1, glm::value_ptr(inv_tex_dim));
                 glUniform1f(rdDiffusionRateALoc_, 1.0f);
                 glUniform1f(rdDiffusionRateBLoc_, 0.5f);
                 glUniform1f(rdFeedRateLoc_, 0.055f);

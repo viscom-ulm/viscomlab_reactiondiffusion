@@ -98,7 +98,6 @@ namespace viscom {
         bool iterationToggle_ = true;
         /** Uniform Location for texture sampler of previous iteration step */
         GLint rdPrevIterationTextureLoc_ = -1;
-        GLint rdInvTexDimLoc_ = -1;
         GLint rdDiffusionRateALoc_ = -1;
         GLint rdDiffusionRateBLoc_ = -1;
         GLint rdFeedRateLoc_ = -1;
