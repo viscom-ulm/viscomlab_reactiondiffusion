@@ -49,12 +49,15 @@ namespace viscom {
             ImGui::SetNextWindowPos(ImVec2(1920.0f - 480.0f - 10.0f, 1080.0f - 200.0f - 10.0f), ImGuiSetCond_FirstUseEver);
             ImGui::Begin("Simulation Parameters");
             {
-                ImGui::SliderFloat("Draw Distance", &GetSimulationData().simulationDrawDistance_, 5.0f, 20.0f);
-                ImGui::SliderFloat("Height", &GetSimulationData().simulationHeight_, 0.001f, 0.1f);
-                ImGui::SliderFloat("Eta", &GetSimulationData().eta_, 1.0f, 5.0f);
-                ImGui::SliderFloat("Absorption Red", &GetSimulationData().sigma_a_.r, 0.5f, 5.0f);
-                ImGui::SliderFloat("Absorption Green", &GetSimulationData().sigma_a_.g, 0.5f, 5.0f);
-                ImGui::SliderFloat("Absorption Blue", &GetSimulationData().sigma_a_.b, 0.5f, 5.0f);
+                if (ImGui::TreeNode("Rendering Parameters")) {
+                    ImGui::SliderFloat("Draw Distance", &GetSimulationData().simulationDrawDistance_, 5.0f, 20.0f);
+                    ImGui::SliderFloat("Height", &GetSimulationData().simulationHeight_, 0.02f, 0.5f);
+                    ImGui::SliderFloat("Eta", &GetSimulationData().eta_, 1.0f, 5.0f);
+                    ImGui::SliderFloat("Absorption Red", &GetSimulationData().sigma_a_.r, 0.5f, 5.0f);
+                    ImGui::SliderFloat("Absorption Green", &GetSimulationData().sigma_a_.g, 0.5f, 5.0f);
+                    ImGui::SliderFloat("Absorption Blue", &GetSimulationData().sigma_a_.b, 0.5f, 5.0f);
+                    ImGui::TreePop();
+                }
             }
             ImGui::End();
         });

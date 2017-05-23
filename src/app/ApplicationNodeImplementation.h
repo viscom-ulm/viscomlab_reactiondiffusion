@@ -20,7 +20,7 @@ namespace viscom {
         /** The distance the simulation will be drawn at. */
         float simulationDrawDistance_ = 15.0f;
         /** The simulation height field height. */
-        float simulationHeight_ = 0.01f;
+        float simulationHeight_ = 0.1f;
         /** The relative index of refraction used for raycasting. */
         float eta_ = 1.5f;
         /** The absorption coefficient. */
