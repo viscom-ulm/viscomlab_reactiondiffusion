@@ -78,6 +78,7 @@ void main()
 
     vec3 t1 = vec3(texCoord, 1.0f);
     vec3 t0  = vec3(imageLoad(backPositionTexture, ivec2(gl_FragCoord.xy)).xy, 0.0f);
+    if (t0 == vec3(0.0f)) discard;
     vec3 t1m0 = t1 - t0;
 
     vec3 t = t0;
