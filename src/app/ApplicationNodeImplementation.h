@@ -27,6 +27,16 @@ namespace viscom {
         glm::vec3 sigma_a_ = glm::vec3(2.0f);
         /** The current global iteration count. */
         std::uint64_t currentGlobalIterationCount_ = 0;
+
+        /** reaction diffusion parameters */
+        float diffusion_rate_a_ = 1.0f;
+        float diffusion_rate_b_ = 0.5f;
+        float feed_rate_ = 0.055f;
+        float kill_rate_ = 0.062f;
+        float dt_ = 1.0f;
+        float seed_point_radius_ = 0.1f;
+        std::vector<glm::vec2> seed_points_;
+        bool use_manhattan_distance_ = true;
     };
 
     class ApplicationNodeImplementation : public ApplicationNodeBase
@@ -56,9 +66,9 @@ namespace viscom {
         static constexpr std::uint64_t MAX_FRAME_ITERATIONS = 5;
 
         /** The simulation frame buffer size (x). */
-        static constexpr unsigned int SIMULATION_SIZE_X = 1920 / 6;
+        static constexpr unsigned int SIMULATION_SIZE_X = 1920 / 4;
         /** The simulation frame buffer size (y). */
-        static constexpr unsigned int SIMULATION_SIZE_Y = 1080 / 6;
+        static constexpr unsigned int SIMULATION_SIZE_Y = 1080 / 4;
 
     private:
         /** The current local iteration count. */
@@ -68,8 +78,6 @@ namespace viscom {
 
         /** Toggle switch for iteration step */
         bool iterationToggle_ = true;
-        /** seed points to draw into simulation */
-        std::vector<glm::vec2> rdSeedPoints;
         /** store mouse position for seed point generation */
         glm::vec2 currentCursorPosition = glm::vec2{0.0f};
         /** store mouse button state */

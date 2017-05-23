@@ -75,9 +75,9 @@ namespace viscom {
         rdSeedPointRadiusLoc_ = rdGpuProgram->getUniformLocation("seed_point_radius");
         rdNumSeedPointsLoc_ = rdGpuProgram->getUniformLocation("num_seed_points");
         rdSeedPointsLoc_ = rdGpuProgram->getUniformLocation("seed_points");
-        rdUseManhattenDistanceLoc_ = rdGpuProgram->getUniformLocation("use_manhatten_distance");
+        rdUseManhattenDistanceLoc_ = rdGpuProgram->getUniformLocation("use_manhattan_distance");
 
-        rdSeedPoints.clear();
+        simData_.seed_points_.clear();
         ResetSimulation();
 
         glGenVertexArrays(1, &simDummyVAO_);
@@ -92,10 +92,10 @@ namespace viscom {
 
         if (currentLocalIterationCount_ < simData_.currentGlobalIterationCount_) {
             if (currentMouseButton == GLFW_MOUSE_BUTTON_1 && currentMouseAction == GLFW_PRESS) {
-                rdSeedPoints.clear();
+                simData_.seed_points_.clear();
                 const float x = currentCursorPosition.x;
                 const float y = currentCursorPosition.y;
-                rdSeedPoints.emplace_back(x, 1.0 - y);
+                simData_.seed_points_.emplace_back(x, 1.0 - y);
                 //rdSeedPoints.emplace_back(1.0 - x, y);
                 //rdSeedPoints.emplace_back(x, y);
                 //rdSeedPoints.emplace_back(1.0 - x, 1.0 - y);
@@ -120,19 +120,18 @@ namespace viscom {
                 const auto rdGpuProgram = reactionDiffusionFullScreenQuad_->GetGPUProgram();
                 glUseProgram(rdGpuProgram->getProgramId());
                 glUniform1i(rdPrevIterationTextureLoc_, 0);
-                const glm::vec2 inv_tex_dim = 1.0f / glm::vec2{reactDiffuseFBO_->GetWidth(), reactDiffuseFBO_->GetHeight()};
-                glUniform1f(rdDiffusionRateALoc_, 1.0f);
-                glUniform1f(rdDiffusionRateBLoc_, 0.5f);
-                glUniform1f(rdFeedRateLoc_, 0.055f);
-                glUniform1f(rdKillRateLoc_, 0.062f);
-                glUniform1f(rdDtLoc_, 1.0f);
-                glUniform1f(rdSeedPointRadiusLoc_, 0.025f);
-                glUniform1ui(rdNumSeedPointsLoc_, static_cast<GLuint>(rdSeedPoints.size()));
-                glUniform2fv(rdSeedPointsLoc_, static_cast<GLsizei>(rdSeedPoints.size()), reinterpret_cast<const GLfloat*>(rdSeedPoints.data()));
-                glUniform1i(rdUseManhattenDistanceLoc_, true);
+                glUniform1f(rdDiffusionRateALoc_, simData_.diffusion_rate_a_);
+                glUniform1f(rdDiffusionRateBLoc_, simData_.diffusion_rate_b_);
+                glUniform1f(rdFeedRateLoc_, simData_.feed_rate_);
+                glUniform1f(rdKillRateLoc_, simData_.kill_rate_);
+                glUniform1f(rdDtLoc_, simData_.dt_);
+                glUniform1f(rdSeedPointRadiusLoc_, simData_.seed_point_radius_);
+                glUniform1ui(rdNumSeedPointsLoc_, static_cast<GLuint>(simData_.seed_points_.size()));
+                glUniform2fv(rdSeedPointsLoc_, static_cast<GLsizei>(simData_.seed_points_.size()), reinterpret_cast<const GLfloat*>(simData_.seed_points_.data()));
+                glUniform1i(rdUseManhattenDistanceLoc_, simData_.use_manhattan_distance_);
 
                 // clear seed points after they were applied
-                rdSeedPoints.clear();
+                simData_.seed_points_.clear();
 
                 // simulate
                 reactDiffuseFBO_->DrawToFBO(*currentDrawBuffers, [this]() {

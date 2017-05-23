@@ -49,13 +49,26 @@ namespace viscom {
             ImGui::SetNextWindowPos(ImVec2(1920.0f - 480.0f - 10.0f, 1080.0f - 200.0f - 10.0f), ImGuiSetCond_FirstUseEver);
             ImGui::Begin("Simulation Parameters");
             {
+                SimulationData& simData = GetSimulationData();
+
                 if (ImGui::TreeNode("Rendering Parameters")) {
-                    ImGui::SliderFloat("Draw Distance", &GetSimulationData().simulationDrawDistance_, 5.0f, 20.0f);
-                    ImGui::SliderFloat("Height", &GetSimulationData().simulationHeight_, 0.02f, 0.5f);
-                    ImGui::SliderFloat("Eta", &GetSimulationData().eta_, 1.0f, 5.0f);
-                    ImGui::SliderFloat("Absorption Red", &GetSimulationData().sigma_a_.r, 0.01f, 10.0f);
-                    ImGui::SliderFloat("Absorption Green", &GetSimulationData().sigma_a_.g, 0.01f,10.0f);
-                    ImGui::SliderFloat("Absorption Blue", &GetSimulationData().sigma_a_.b, 0.01f, 10.0f);
+                    ImGui::SliderFloat("Draw Distance", &simData.simulationDrawDistance_, 5.0f, 20.0f);
+                    ImGui::SliderFloat("Height", &simData.simulationHeight_, 0.02f, 0.5f);
+                    ImGui::SliderFloat("Eta", &simData.eta_, 1.0f, 5.0f);
+                    ImGui::SliderFloat("Absorption Red", &simData.sigma_a_.r, 0.0f, 100.0f);
+                    ImGui::SliderFloat("Absorption Green", &simData.sigma_a_.g, 0.0f, 100.0f);
+                    ImGui::SliderFloat("Absorption Blue", &simData.sigma_a_.b, 0.0f, 100.0f);
+                    ImGui::TreePop();
+                }
+
+                if (ImGui::TreeNode("Reaction Diffusion Parameters")) {
+                    ImGui::SliderFloat("Diffusion Rate A", &simData.diffusion_rate_a_, 0.0f, 2.0f);
+                    ImGui::SliderFloat("Diffusion Rate B", &simData.diffusion_rate_b_, 0.0f, 2.0f);
+                    ImGui::SliderFloat("Feed Rate", &simData.feed_rate_, 0.0f, 0.2f);
+                    ImGui::SliderFloat("Kill Rate", &simData.kill_rate_, 0.0f, 0.2f);
+                    ImGui::SliderFloat("Dt", &simData.dt_, 0.0f, 5.0f);
+                    ImGui::SliderFloat("Seed Point Radius", &simData.seed_point_radius_, 0.01f, 1.0f);
+                    ImGui::Checkbox("Use Manhattan Distance", &simData.use_manhattan_distance_);
                     ImGui::TreePop();
                 }
             }

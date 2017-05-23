@@ -22,7 +22,7 @@ uniform float seed_point_radius = 0.001;
 uniform uint num_seed_points = 0;
 const uint max_seed_points = 10;
 uniform vec2 seed_points[max_seed_points];
-uniform bool use_manhatten_distance = false;
+uniform bool use_manhattan_distance = false;
 
 vec2 laplaceAB() // vec2 laplaceAB(vec2 inv_tex_dim)
 {
@@ -30,17 +30,21 @@ vec2 laplaceAB() // vec2 laplaceAB(vec2 inv_tex_dim)
     // 0.2000   -1.0000    0.2000
     // 0.0500    0.2000    0.0500
 
-    //const float inv_tex_dim_x = inv_tex_dim.x;
-    //const float inv_tex_dim_y = inv_tex_dim.y;
-    //return 0.05 * texture(texture_0, texCoord + vec2(-inv_tex_dim_x, inv_tex_dim_y)).rg // upper line
-    //     + 0.20 * texture(texture_0, texCoord + vec2(0.0, inv_tex_dim_y)).rg
-    //     + 0.05 * texture(texture_0, texCoord + vec2(inv_tex_dim_x, inv_tex_dim_y)).rg
-    //     + 0.20 * texture(texture_0, texCoord + vec2(-inv_tex_dim_x, 0.0)).rg // middle line
-    //     -        texture(texture_0, texCoord).rg
-    //     + 0.20 * texture(texture_0, texCoord + vec2(inv_tex_dim_x, 0.0)).rg
-    //     + 0.05 * texture(texture_0, texCoord + vec2(-inv_tex_dim_x, -inv_tex_dim_y)).rg // lower line
-    //     + 0.20 * texture(texture_0, texCoord + vec2(0.0, -inv_tex_dim_y)).rg
-    //     + 0.05 * texture(texture_0, texCoord + vec2(inv_tex_dim_x, -inv_tex_dim_y)).rg;
+    /*
+    const vec2 tex_dim = textureSize(texture_0, 0).xy;
+    const vec2 inv_tex_dim = 1.0 / tex_dim;
+    const float inv_tex_dim_x = inv_tex_dim.x;
+    const float inv_tex_dim_y = inv_tex_dim.y;
+    return 0.05 * texture(texture_0, texCoord + vec2(-inv_tex_dim_x, inv_tex_dim_y)).rg // upper line
+         + 0.20 * texture(texture_0, texCoord + vec2(0.0, inv_tex_dim_y)).rg
+         + 0.05 * texture(texture_0, texCoord + vec2(inv_tex_dim_x, inv_tex_dim_y)).rg
+         + 0.20 * texture(texture_0, texCoord + vec2(-inv_tex_dim_x, 0.0)).rg // middle line
+         -        texture(texture_0, texCoord).rg
+         + 0.20 * texture(texture_0, texCoord + vec2(inv_tex_dim_x, 0.0)).rg
+         + 0.05 * texture(texture_0, texCoord + vec2(-inv_tex_dim_x, -inv_tex_dim_y)).rg // lower line
+         + 0.20 * texture(texture_0, texCoord + vec2(0.0, -inv_tex_dim_y)).rg
+         + 0.05 * texture(texture_0, texCoord + vec2(inv_tex_dim_x, -inv_tex_dim_y)).rg;
+    */
 
     return 0.05 * textureOffset(texture_0, texCoord, ivec2(-1,  1)).rg // upper line
          + 0.20 * textureOffset(texture_0, texCoord, ivec2( 0,  1)).rg
@@ -64,7 +68,7 @@ void main()
     for (int i = 0; i < num_seed_points; ++i) {
         vec2 seed_point = abs(texCoord - seed_points[i]);
         seed_point.x *= tex_dim.x / tex_dim.y; // fix aspect ratio
-        if (use_manhatten_distance) {
+        if (use_manhattan_distance) {
             const float d = seed_point.x + seed_point.y;
             if (d < seed_point_radius) {
                 B = 1.0;
