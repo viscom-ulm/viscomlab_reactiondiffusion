@@ -66,7 +66,7 @@ namespace viscom {
         raycastHeightTextureLoc_ = raycastProgram_->getUniformLocation("heightTexture");
         raycastPositionBackTexLoc_ = raycastProgram_->getUniformLocation("backPositionTexture");
 
-        reactionDiffusionFullScreenQuad_ = std::make_unique<FullscreenQuad>("reactionDiffusionSimulation.frag", appNode_);
+        reactionDiffusionFullScreenQuad_ = CreateFullscreenQuad("reactionDiffusionSimulation.frag");
         const auto rdGpuProgram = reactionDiffusionFullScreenQuad_->GetGPUProgram();
         rdPrevIterationTextureLoc_ = rdGpuProgram->getUniformLocation("texture_0");
         rdDiffusionRateALoc_ = rdGpuProgram->getUniformLocation("diffusion_rate_A");
