@@ -16,6 +16,7 @@
 #include <glm/gtc/quaternion.hpp>
 
 #undef max
+#undef min
 
 #include <iostream>
 
