@@ -14,6 +14,7 @@
 namespace viscom {
 
     class MeshRenderable;
+    class FullscreenQuad;
 
     struct SimulationData {
         /** The distance the simulation will be drawn at. */
@@ -25,7 +26,7 @@ namespace viscom {
         /** The absorption coefficient. */
         float sigma_a_ = 2.0f;
         /** The current global iteration count. */
-        std::uint64_t currentGlobalIterationCount_;
+        std::uint64_t currentGlobalIterationCount_ = 0;
     };
 
     class ApplicationNodeImplementation : public ApplicationNodeBase
@@ -48,21 +49,36 @@ namespace viscom {
         SimulationData& GetSimulationData() { return simData_; }
 
         /** The maximum iteration count per frame. */
-        static constexpr std::uint64_t MAX_FRAME_ITERATIONS = 10;
+        static constexpr std::uint64_t MAX_FRAME_ITERATIONS = 20;
 
         /** The simulation frame buffer size (x). */
-        static constexpr unsigned int SIMULATION_SIZE_X = 1920;
+        static constexpr unsigned int SIMULATION_SIZE_X = 1920/2;
         /** The simulation frame buffer size (y). */
-        static constexpr unsigned int SIMULATION_SIZE_Y = 1080;
+        static constexpr unsigned int SIMULATION_SIZE_Y = 1080/2;
 
     private:
         /** The current local iteration count. */
-        std::uint64_t currentLocalIterationCount_;
+        std::uint64_t currentLocalIterationCount_ = 0;
         /** Holds the simulation data. */
         SimulationData simData_;
 
         /** Toggle switch for iteration step */
-        bool iteration_toggle_;
+        bool iterationToggle_ = true;
+        /** Uniform Location for texture sampler of previous iteration step */
+        GLint rdPrevIterationTextureLoc_ = -1;
+        GLint rdDiffusionRateALoc_ = -1;
+        GLint rdDiffusionRateBLoc_ = -1;
+        GLint rdFeedRateLoc_ = -1;
+        GLint rdKillRateLoc_ = -1;
+        GLint rdDtLoc_ = -1;
+        GLint rdSeedPointRadiusLoc_ = -1;
+        GLint rdNumSeedPointsLoc_ = -1;
+        GLint rdSeedPointsLoc_ = -1;
+        GLint rdUseManhattenDistanceLoc_ = -1;
+
+        /** Program to compute reaction diffusion step */
+        std::unique_ptr<FullscreenQuad> reactionDiffusionFullScreenQuad_;
+
         /** The frame buffer object for the simulation. */
         std::unique_ptr<FrameBuffer> reactDiffuseFBO_;
         /** The frame buffer objects for the simulation height field back. */

@@ -37,12 +37,12 @@ float heightFieldSphere(vec2 texCoords, vec2 c, float r) {
 }
 
 float heightField(vec2 texCoords) {
-    // return texture(heightTexture, texCoords).r;
-    return (4.0 * heightFieldSphere(texCoords, vec2(0.5), 0.25))
-        + (5.0 * heightFieldSphere(texCoords, vec2(0.12, 0.12), 0.09))
-        + (5.0 * heightFieldSphere(texCoords, vec2(0.12, 0.88), 0.09))
-        + (5.0 * heightFieldSphere(texCoords, vec2(0.88, 0.12), 0.09))
-        + (5.0 * heightFieldSphere(texCoords, vec2(0.88, 0.88), 0.09));
+    return texture(heightTexture, texCoords).r;
+    //return (4.0 * heightFieldSphere(texCoords, vec2(0.5), 0.25))
+    //    + (5.0 * heightFieldSphere(texCoords, vec2(0.12, 0.12), 0.09))
+    //    + (5.0 * heightFieldSphere(texCoords, vec2(0.12, 0.88), 0.09))
+    //    + (5.0 * heightFieldSphere(texCoords, vec2(0.88, 0.12), 0.09))
+    //    + (5.0 * heightFieldSphere(texCoords, vec2(0.88, 0.88), 0.09));
 }
 
 vec3 heightfieldNormal(vec3 p) {
@@ -51,14 +51,14 @@ vec3 heightfieldNormal(vec3 p) {
 
     vec3 dx0 = vec3(p.xy - deltaX, heightField(p.xy - deltaX));
     vec3 dx1 = vec3(p.xy + deltaX, heightField(p.xy + deltaX));
-    vec3 tDX = dx1 - dx0;
+    //vec3 tDX = dx1 - dx0;
 
     vec3 dy0 = vec3(p.xy - deltaY, heightField(p.xy - deltaY));
     vec3 dy1 = vec3(p.xy + deltaY, heightField(p.xy + deltaY));
-    vec3 tDY = dy1 - dy0;
+    //vec3 tDY = dy1 - dy0;
 
-    //vec3 tDX = dFdx(p);
-    //vec3 tDY = dFdy(p);
+    vec3 tDX = dFdx(p);
+    vec3 tDY = dFdy(p);
     return normalize(cross(tDX, tDY));
 }
 
@@ -81,7 +81,7 @@ void main()
     vec3 t1m0 = t1 - t0;
 
     vec3 t = t0;
-    for (int i = 0; i < 20; ++i) {
+    for (int i = 0; i < 40; ++i) {
         float h = heightField(t.xy);
         t = t0 + (h * t1m0);
     }
@@ -110,4 +110,6 @@ void main()
     // color = vec4(rt * 0.5 + 0.5, 1.0);
     // color = vec4(t.x, t.y, h, 1);
     // vec3 t = refract(v, normal, eta);
+
+    //color = vec4(texture(heightTexture, t0.xy).rrr, 1.0);
 }
