@@ -20,7 +20,7 @@ namespace viscom {
         /** The distance the simulation will be drawn at. */
         float simulationDrawDistance_ = 15.0f;
         /** The simulation height field height. */
-        float simulationHeight_ = 1.0f;
+        float simulationHeight_ = 0.1f;
         /** The relative index of refraction used for raycasting. */
         float eta_ = 1.5f;
         /** The absorption coefficient. */
@@ -98,6 +98,8 @@ namespace viscom {
 
         /** Output size of the simulation. */
         glm::vec2 simulationOutputSize_;
+        /** The distance to the user. */
+        float userDistance_;
 
         /** Holds the shader program for raycasting the height field back side. */
         std::shared_ptr<GPUProgram> raycastBackProgram_;
