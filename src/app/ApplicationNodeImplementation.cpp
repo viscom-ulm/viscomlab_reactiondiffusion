@@ -12,21 +12,22 @@
 #include "core/gfx/mesh/MeshRenderable.h"
 #include "core/gfx/FullscreenQuad.h"
 #include "core/imgui/imgui_impl_glfw_gl3.h"
+#include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtc/quaternion.hpp>
+
+#undef max
+#undef min
 
 #include <iostream>
 
 namespace viscom {
 
     ApplicationNodeImplementation::ApplicationNodeImplementation(ApplicationNodeInternal* appNode) :
-        appNode_{ appNode }
+        ApplicationNodeBase{ appNode }
     {
     }
 
     ApplicationNodeImplementation::~ApplicationNodeImplementation() = default;
-
-    void ApplicationNodeImplementation::PreWindow()
-    {
-    }
 
     void ApplicationNodeImplementation::InitOpenGL()
     {
@@ -48,11 +49,11 @@ namespace viscom {
         }
 
 
-        raycastBackProgram_ = appNode_->GetGPUProgramManager().GetResource("raycastHeightfieldBack", std::initializer_list<std::string>{ "raycastHeightfield.vert", "raycastHeightfieldBack.frag" });
+        raycastBackProgram_ = GetGPUProgramManager().GetResource("raycastHeightfieldBack", std::initializer_list<std::string>{ "raycastHeightfield.vert", "raycastHeightfieldBack.frag" });
         raycastBackVPLoc_ = raycastBackProgram_->getUniformLocation("viewProjectionMatrix");
         raycastBackQuadSizeLoc_ = raycastBackProgram_->getUniformLocation("quadSize");
         raycastBackDistanceLoc_ = raycastBackProgram_->getUniformLocation("distance");
-        raycastProgram_ = appNode_->GetGPUProgramManager().GetResource("raycastHeightfield", std::initializer_list<std::string>{ "raycastHeightfield.vert", "raycastHeightfield.frag" });
+        raycastProgram_ = GetGPUProgramManager().GetResource("raycastHeightfield", std::initializer_list<std::string>{ "raycastHeightfield.vert", "raycastHeightfield.frag" });
         raycastVPLoc_ = raycastProgram_->getUniformLocation("viewProjectionMatrix");
         raycastQuadSizeLoc_ = raycastProgram_->getUniformLocation("quadSize");
         raycastDistanceLoc_ = raycastProgram_->getUniformLocation("distance");
@@ -65,7 +66,7 @@ namespace viscom {
         raycastHeightTextureLoc_ = raycastProgram_->getUniformLocation("heightTexture");
         raycastPositionBackTexLoc_ = raycastProgram_->getUniformLocation("backPositionTexture");
 
-        reactionDiffusionFullScreenQuad_ = std::make_unique<FullscreenQuad>("reactionDiffusionSimulation.frag", appNode_);
+        reactionDiffusionFullScreenQuad_ = CreateFullscreenQuad("reactionDiffusionSimulation.frag");
         const auto rdGpuProgram = reactionDiffusionFullScreenQuad_->GetGPUProgram();
         rdPrevIterationTextureLoc_ = rdGpuProgram->getUniformLocation("texture_0");
         rdDiffusionRateALoc_ = rdGpuProgram->getUniformLocation("diffusion_rate_A");
@@ -90,17 +91,10 @@ namespace viscom {
         });
 
         glGenVertexArrays(1, &simDummyVAO_);
-        backgroundTexture_ = appNode_->GetTextureManager().GetResource("models/teapot/default.png");
-        environmentMap_ = appNode_->GetTextureManager().GetResource("textures/grace_probe.hdr");
+        backgroundTexture_ = GetTextureManager().GetResource("models/teapot/default.png");
+        environmentMap_ = GetTextureManager().GetResource("textures/grace_probe.hdr");
     }
 
-    void ApplicationNodeImplementation::PreSync()
-    {
-    }
-
-    void ApplicationNodeImplementation::UpdateSyncedInfo()
-    {
-    }
 
     void ApplicationNodeImplementation::UpdateFrame(double currentTime, double)
     {
@@ -146,12 +140,14 @@ namespace viscom {
             }
             currentLocalIterationCount_ += iterations;
         }
+
+        auto perspectiveMatrix = GetCamera()->GetCentralPerspectiveMatrix();
+        simulationOutputSize_ = glm::vec2(simData_.simulationDrawDistance_) / glm::vec2(perspectiveMatrix[0][0], perspectiveMatrix[1][1]);
     }
 
     void ApplicationNodeImplementation::ClearBuffer(FrameBuffer& fbo)
     {
-        auto windowId = GetEngine()->getCurrentWindowPtr()->getId();
-        simulationBackFBOs_[windowId].DrawToFBO([]() {
+        SelectOffscreenBuffer(simulationBackFBOs_)->DrawToFBO([]() {
             glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         });
@@ -165,27 +161,24 @@ namespace viscom {
 
     void ApplicationNodeImplementation::DrawFrame(FrameBuffer& fbo)
     {
-        auto perspectiveMatrix = GetEngine()->getCurrentProjectionMatrix();
-        glm::vec2 simulationSize(simData_.simulationDrawDistance_);
-        simulationSize /= glm::vec2(perspectiveMatrix[0][0], perspectiveMatrix[1][1]);
+        auto perspectiveMatrix = GetCamera()->GetViewPerspectiveMatrix();
 
-        auto windowId = GetEngine()->getCurrentWindowPtr()->getId();
-        simulationBackFBOs_[windowId].DrawToFBO([this, &perspectiveMatrix, &simulationSize]() {
+        SelectOffscreenBuffer(simulationBackFBOs_)->DrawToFBO([this, &perspectiveMatrix]() {
             glBindVertexArray(simDummyVAO_);
             glUseProgram(raycastBackProgram_->getProgramId());
             glUniformMatrix4fv(raycastBackVPLoc_, 1, GL_FALSE, glm::value_ptr(perspectiveMatrix));
-            glUniform2fv(raycastBackQuadSizeLoc_, 1, glm::value_ptr(simulationSize));
+            glUniform2fv(raycastBackQuadSizeLoc_, 1, glm::value_ptr(simulationOutputSize_));
             glUniform1f(raycastBackDistanceLoc_, simData_.simulationDrawDistance_);
             glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         });
 
-        fbo.DrawToFBO([this, &perspectiveMatrix, &simulationSize, windowId]() {
+        fbo.DrawToFBO([this, &perspectiveMatrix]() {
             {
-                glm::vec3 camPos(0.0f);
+                glm::vec3 camPos = GetCamera()->GetPosition();
                 glBindVertexArray(simDummyVAO_);
                 glUseProgram(raycastProgram_->getProgramId());
                 glUniformMatrix4fv(raycastVPLoc_, 1, GL_FALSE, glm::value_ptr(perspectiveMatrix));
-                glUniform2fv(raycastQuadSizeLoc_, 1, glm::value_ptr(simulationSize));
+                glUniform2fv(raycastQuadSizeLoc_, 1, glm::value_ptr(simulationOutputSize_));
                 glUniform1f(raycastDistanceLoc_, simData_.simulationDrawDistance_ - simData_.simulationHeight_);
                 glUniform1f(raycastSimHeightLoc_, simData_.simulationHeight_);
                 glUniform3fv(raycastCamPosLoc_, 1, glm::value_ptr(camPos));
@@ -205,7 +198,7 @@ namespace viscom {
                 glBindTexture(GL_TEXTURE_2D, reactDiffuseFBO_->GetTextures()[2]);
                 glUniform1i(raycastHeightTextureLoc_, 2);
 
-                glBindImageTexture(0, simulationBackFBOs_[windowId].GetTextures()[0], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG32F);
+                glBindImageTexture(0, SelectOffscreenBuffer(simulationBackFBOs_)->GetTextures()[0], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG32F);
                 glUniform1i(raycastPositionBackTexLoc_, 0);
 
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -214,7 +207,7 @@ namespace viscom {
             /*glBindVertexArray(vaoBackgroundGrid_);
             glBindBuffer(GL_ARRAY_BUFFER, vboBackgroundGrid_);
 
-            auto MVP = GetEngine()->getCurrentModelViewProjectionMatrix();
+            auto MVP = GetCamera()->GetViewPerspectiveMatrix();
             {
                 glUseProgram(backgroundProgram_->getProgramId());
                 glUniformMatrix4fv(backgroundMVPLoc_, 1, GL_FALSE, glm::value_ptr(MVP));
@@ -232,6 +225,9 @@ namespace viscom {
 
             {
                 glUseProgram(teapotProgram_->getProgramId());
+                auto normalMatrix = glm::inverseTranspose(glm::mat3(teapotModelMatrix_));
+                glUniformMatrix4fv(teapotModelMLoc_, 1, GL_FALSE, glm::value_ptr(teapotModelMatrix_));
+                glUniformMatrix4fv(teapotNormalMLoc_, 1, GL_FALSE, glm::value_ptr(normalMatrix));
                 glUniformMatrix4fv(teapotVPLoc_, 1, GL_FALSE, glm::value_ptr(MVP));
                 teapotRenderable_->Draw(teapotModelMatrix_);
             }
@@ -242,64 +238,10 @@ namespace viscom {
         });
     }
 
-    void ApplicationNodeImplementation::Draw2D(FrameBuffer& fbo)
-    {
-        fbo.DrawToFBO([]() {
-        });
-    }
-
-    void ApplicationNodeImplementation::PostDraw()
-    {
-    }
-
     void ApplicationNodeImplementation::CleanUp()
     {
         if (simDummyVAO_ != 0) glDeleteVertexArrays(1, &simDummyVAO_);
         simDummyVAO_ = 0;
     }
 
-    // ReSharper disable CppParameterNeverUsed
-    void ApplicationNodeImplementation::KeyboardCallback(int key, int scancode, int action, int mods)
-    {
-#ifdef VISCOM_CLIENTGUI
-        ImGui_ImplGlfwGL3_KeyCallback(key, scancode, action, mods);
-#endif
-    }
-
-    void ApplicationNodeImplementation::CharCallback(unsigned int character, int mods)
-    {
-#ifdef VISCOM_CLIENTGUI
-        ImGui_ImplGlfwGL3_CharCallback(character);
-#endif
-    }
-
-    void ApplicationNodeImplementation::MouseButtonCallback(int button, int action)
-    {
-#ifdef VISCOM_CLIENTGUI
-        ImGui_ImplGlfwGL3_MouseButtonCallback(button, action, 0);
-#endif
-    }
-
-    void ApplicationNodeImplementation::MousePosCallback(double x, double y)
-    {
-#ifdef VISCOM_CLIENTGUI
-        ImGui_ImplGlfwGL3_MousePositionCallback(x, y);
-#endif
-    }
-
-    void ApplicationNodeImplementation::MouseScrollCallback(double xoffset, double yoffset)
-    {
-#ifdef VISCOM_CLIENTGUI
-        ImGui_ImplGlfwGL3_ScrollCallback(xoffset, yoffset);
-#endif
-    }
-    // ReSharper restore CppParameterNeverUsed
-
-    void ApplicationNodeImplementation::EncodeData()
-    {
-    }
-
-    void ApplicationNodeImplementation::DecodeData()
-    {
-    }
 }
