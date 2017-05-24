@@ -27,14 +27,34 @@ namespace viscom {
 
     void MasterNode::PreSync()
     {
+        auto syncPoint = syncedTimestamp_.getVal();
+        // iterate GetSeedPoints, delete all seed points before syncPoint
+
         ApplicationNodeImplementation::PreSync();
         sharedData_.setVal(GetSimulationData());
+        sharedSeedPoints_.setVal(GetSeedPoints());
     }
 
     void MasterNode::UpdateFrame(double currentTime, double elapsedTime)
     {
-        ApplicationNodeImplementation::UpdateFrame(currentTime, elapsedTime);
         GetSimulationData().currentGlobalIterationCount_ += ApplicationNodeImplementation::MAX_FRAME_ITERATIONS;
+
+        std::vector<glm::vec2> seed_points = GetSeedPoints();
+        if (currentMouseButton_ == GLFW_MOUSE_BUTTON_1 && currentMouseAction_ == GLFW_PRESS) {
+            const float x = currentCursorPosition_.x;
+            const float y = currentCursorPosition_.y;
+            // # actual mouse position
+            seed_points.emplace_back(x, 1.0 - y);
+            // # mirrored mouse positions
+            //rdSeedPoints.emplace_back(1.0 - x, y);
+            //rdSeedPoints.emplace_back(x, y);
+            //rdSeedPoints.emplace_back(1.0 - x, 1.0 - y);
+        } else if (currentMouseButton_ == GLFW_MOUSE_BUTTON_2 && currentMouseAction_ == GLFW_PRESS) {
+            SimulationData& sim_data = GetSimulationData();
+            sim_data.resetFrameIdx_ = sim_data.currentGlobalIterationCount_;
+        }
+
+        ApplicationNodeImplementation::UpdateFrame(currentTime, elapsedTime);
     }
 
     void MasterNode::DrawFrame(FrameBuffer& fbo)
@@ -107,7 +127,12 @@ namespace viscom {
         ImGui_ImplGlfwGL3_MouseButtonCallback(button, action, 0);
         if (ImGui::GetIO().WantCaptureMouse) return true;
 #endif
-        return ApplicationNodeImplementation::MouseButtonCallback(button, action);
+
+        if (!ApplicationNodeImplementation::MouseButtonCallback(button, action)) {
+            currentMouseAction_ = action;
+            currentMouseButton_ = button;
+        }
+        return true;
     }
 
     bool MasterNode::MousePosCallback(double x, double y)
@@ -116,7 +141,11 @@ namespace viscom {
         ImGui_ImplGlfwGL3_MousePositionCallback(x, y);
         if (ImGui::GetIO().WantCaptureMouse) return true;
 #endif
-        return ApplicationNodeImplementation::MousePosCallback(x, y);
+
+        if (!ApplicationNodeImplementation::MousePosCallback(x, y)) {
+            currentCursorPosition_ = glm::vec2{x, y};
+        }
+        return true;
     }
 
     bool MasterNode::MouseScrollCallback(double xoffset, double yoffset)
@@ -132,12 +161,15 @@ namespace viscom {
     {
         ApplicationNodeImplementation::EncodeData();
         sgct::SharedData::instance()->writeObj(&sharedData_);
+        sgct::SharedData::instance()->writeVector(&sharedSeedPoints_);
+        syncedTimestamp_.setVal(sharedData_.getVal().currentGlobalIterationCount_);
     }
 
-    void MasterNode::DecodeData()
+    void MasterNode::DecodeData()   
     {
         ApplicationNodeImplementation::DecodeData();
         sgct::SharedData::instance()->readObj(&sharedData_);
+        sgct::SharedData::instance()->readVector(&sharedSeedPoints_);
     }
 
 }

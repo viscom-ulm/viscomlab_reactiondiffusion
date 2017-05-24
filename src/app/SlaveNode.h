@@ -27,6 +27,7 @@ namespace viscom {
     private:
         /** Holds the data shared by the master. */
         sgct::SharedObject<SimulationData> sharedData_;
+        sgct::SharedVector<glm::vec2> sharedSeedPoints_;
 
     };
 }

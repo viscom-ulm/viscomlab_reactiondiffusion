@@ -76,7 +76,7 @@ void main()
         } else {
             const float d = dot(seed_point, seed_point);
             const float r = seed_point_radius * seed_point_radius;
-            if (d < r && d > 0.9 * r) {
+            if (d < r) {// && d > 0.9 * r) {
                 B = 1.0;
             }
         }

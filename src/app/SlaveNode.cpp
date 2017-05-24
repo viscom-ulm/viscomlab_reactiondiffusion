@@ -27,18 +27,30 @@ namespace viscom {
     {
         SlaveNodeInternal::UpdateSyncedInfo();
         GetSimulationData() = sharedData_.getVal();
+        const auto new_seed_points = sharedSeedPoints_.getVal();
+        auto current_seed_points = GetSeedPoints();
+
+        // TODO: remove old seed points, push back new ones into queue
+        for () {
+        }
+
+        for (const auto& seed_point : new_seed_points) {
+            current_seed_points.push_back(seed_point);
+        }
     }
 
     void SlaveNode::EncodeData()
     {
         SlaveNodeInternal::EncodeData();
         sgct::SharedData::instance()->writeObj(&sharedData_);
+        sgct::SharedData::instance()->writeVector(&sharedSeedPoints_);
     }
 
     void SlaveNode::DecodeData()
     {
         SlaveNodeInternal::DecodeData();
         sgct::SharedData::instance()->readObj(&sharedData_);
+        sgct::SharedData::instance()->readVector(&sharedSeedPoints_);
     }
 
 }

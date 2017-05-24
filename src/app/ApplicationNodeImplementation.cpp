@@ -77,7 +77,7 @@ namespace viscom {
         rdSeedPointsLoc_ = rdGpuProgram->getUniformLocation("seed_points");
         rdUseManhattenDistanceLoc_ = rdGpuProgram->getUniformLocation("use_manhattan_distance");
 
-        simData_.seed_points_.clear();
+        seed_points_.clear();
         ResetSimulation();
 
         glGenVertexArrays(1, &simDummyVAO_);
@@ -91,21 +91,13 @@ namespace viscom {
         static const std::vector<unsigned int> drawBuffers1{{1, 2}};
 
         if (currentLocalIterationCount_ < simData_.currentGlobalIterationCount_) {
-            if (currentMouseButton == GLFW_MOUSE_BUTTON_1 && currentMouseAction == GLFW_PRESS) {
-                simData_.seed_points_.clear();
-                const float x = currentCursorPosition.x;
-                const float y = currentCursorPosition.y;
-                simData_.seed_points_.emplace_back(x, 1.0 - y);
-                //rdSeedPoints.emplace_back(1.0 - x, y);
-                //rdSeedPoints.emplace_back(x, y);
-                //rdSeedPoints.emplace_back(1.0 - x, 1.0 - y);
-            } else if (currentMouseButton == GLFW_MOUSE_BUTTON_2 && currentMouseAction == GLFW_PRESS) {
-                ResetSimulation();
-            }
-
-            auto iterations = glm::min(simData_.currentGlobalIterationCount_ - currentLocalIterationCount_, MAX_FRAME_ITERATIONS);
+            const auto iterations = glm::min(simData_.currentGlobalIterationCount_ - currentLocalIterationCount_, MAX_FRAME_ITERATIONS);
 
             for (std::uint64_t i = 0; i < iterations; ++i) {
+                if (currentLocalIterationCount_ + i == simData_.resetFrameIdx_) {
+                    ResetSimulation();
+                }
+
                 const std::vector<unsigned int>* currentDrawBuffers{nullptr};
                 glActiveTexture(GL_TEXTURE0);
                 if (iterationToggle_) {
@@ -117,6 +109,13 @@ namespace viscom {
                 }
                 iterationToggle_ = !iterationToggle_;
 
+                std::vector<glm::vec2> actual_seed_points;
+                for (const auto& seed_point : seed_points_) {
+                    if (is_relevant_for_this_iteration) {
+                        actual_seed_points.push_back(seed_point);
+                    }
+                }
+
                 const auto rdGpuProgram = reactionDiffusionFullScreenQuad_->GetGPUProgram();
                 glUseProgram(rdGpuProgram->getProgramId());
                 glUniform1i(rdPrevIterationTextureLoc_, 0);
@@ -126,12 +125,12 @@ namespace viscom {
                 glUniform1f(rdKillRateLoc_, simData_.kill_rate_);
                 glUniform1f(rdDtLoc_, simData_.dt_);
                 glUniform1f(rdSeedPointRadiusLoc_, simData_.seed_point_radius_);
-                glUniform1ui(rdNumSeedPointsLoc_, static_cast<GLuint>(simData_.seed_points_.size()));
-                glUniform2fv(rdSeedPointsLoc_, static_cast<GLsizei>(simData_.seed_points_.size()), reinterpret_cast<const GLfloat*>(simData_.seed_points_.data()));
+                glUniform1ui(rdNumSeedPointsLoc_, static_cast<GLuint>(seed_points_.size()));
+                glUniform2fv(rdSeedPointsLoc_, static_cast<GLsizei>(seed_points_.size()), reinterpret_cast<const GLfloat*>(seed_points_.data()));
                 glUniform1i(rdUseManhattenDistanceLoc_, simData_.use_manhattan_distance_);
 
                 // clear seed points after they were applied
-                simData_.seed_points_.clear();
+                seed_points_.clear();
 
                 // simulate
                 reactDiffuseFBO_->DrawToFBO(*currentDrawBuffers, [this]() {
@@ -226,28 +225,4 @@ namespace viscom {
         if (simDummyVAO_ != 0) glDeleteVertexArrays(1, &simDummyVAO_);
         simDummyVAO_ = 0;
     }
-
-    bool ApplicationNodeImplementation::MouseButtonCallback(int button, int action)
-    {
-        bool event_handeled{false};
-
-        if (!ApplicationNodeBase::MouseButtonCallback(button, action)) {
-            currentMouseAction = action;
-            currentMouseButton = button;
-        }
-
-        return event_handeled;
-    }
-
-    bool ApplicationNodeImplementation::MousePosCallback(double x, double y)
-    {
-        bool event_handeled{false};
-
-        if (!ApplicationNodeBase::MousePosCallback(x, y)) {
-            currentCursorPosition = glm::vec2{x, y};
-        }
-
-        return event_handeled;
-    }
-
 }
