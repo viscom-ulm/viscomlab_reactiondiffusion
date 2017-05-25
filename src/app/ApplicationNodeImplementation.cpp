@@ -127,9 +127,6 @@ namespace viscom {
                 glUniform2fv(rdSeedPointsLoc_, static_cast<GLsizei>(actual_seed_points.size()), reinterpret_cast<const GLfloat*>(actual_seed_points.data()));
                 glUniform1i(rdUseManhattenDistanceLoc_, simData_.use_manhattan_distance_);
 
-                // clear seed points after they were applied
-                seed_points_.clear();
-
                 // simulate
                 reactDiffuseFBO_->DrawToFBO(*currentDrawBuffers, [this]() {
                     reactionDiffusionFullScreenQuad_->Draw();
