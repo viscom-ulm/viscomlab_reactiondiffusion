@@ -111,9 +111,7 @@ namespace viscom {
 
                 std::vector<glm::vec2> actual_seed_points;
                 for (const auto& seed_point : seed_points_) {
-                    if (is_relevant_for_this_iteration) {
-                        actual_seed_points.push_back(seed_point);
-                    }
+                    if (currentLocalIterationCount_ + i == seed_point.first) actual_seed_points.push_back(seed_point.second);
                 }
 
                 const auto rdGpuProgram = reactionDiffusionFullScreenQuad_->GetGPUProgram();
@@ -125,8 +123,8 @@ namespace viscom {
                 glUniform1f(rdKillRateLoc_, simData_.kill_rate_);
                 glUniform1f(rdDtLoc_, simData_.dt_);
                 glUniform1f(rdSeedPointRadiusLoc_, simData_.seed_point_radius_);
-                glUniform1ui(rdNumSeedPointsLoc_, static_cast<GLuint>(seed_points_.size()));
-                glUniform2fv(rdSeedPointsLoc_, static_cast<GLsizei>(seed_points_.size()), reinterpret_cast<const GLfloat*>(seed_points_.data()));
+                glUniform1ui(rdNumSeedPointsLoc_, static_cast<GLuint>(actual_seed_points.size()));
+                glUniform2fv(rdSeedPointsLoc_, static_cast<GLsizei>(actual_seed_points.size()), reinterpret_cast<const GLfloat*>(actual_seed_points.data()));
                 glUniform1i(rdUseManhattenDistanceLoc_, simData_.use_manhattan_distance_);
 
                 // clear seed points after they were applied

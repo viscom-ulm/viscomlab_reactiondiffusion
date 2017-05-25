@@ -56,9 +56,11 @@ namespace viscom {
         virtual void DrawFrame(FrameBuffer& fbo) override;
         virtual void CleanUp() override;
 
+        using SeedPoint = std::pair<std::size_t, glm::vec2>;
+
         std::uint64_t& GetCurrentLocalIterationCount() { return currentLocalIterationCount_; }
         SimulationData& GetSimulationData() { return simData_; }
-        std::vector<glm::vec2>& GetSeedPoints() { return seed_points_; }
+        std::vector<SeedPoint>& GetSeedPoints() { return seed_points_; }
         void ResetSimulation() const;
 
         /** The maximum iteration count per frame. */
@@ -78,7 +80,7 @@ namespace viscom {
         /** Toggle switch for iteration step */
         bool iterationToggle_ = true;
         /** stores seed points */
-        std::vector<glm::vec2> seed_points_;
+        std::vector<SeedPoint> seed_points_;
 
         /** Uniform Location for texture sampler of previous iteration step */
         GLint rdPrevIterationTextureLoc_ = -1;

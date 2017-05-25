@@ -29,6 +29,9 @@ namespace viscom {
     {
         auto syncPoint = syncedTimestamp_.getVal();
         // iterate GetSeedPoints, delete all seed points before syncPoint
+        auto lastDel = GetSeedPoints().begin();
+        for (; lastDel != GetSeedPoints().end() && lastDel->first < syncPoint; ++lastDel);
+        GetSeedPoints().erase(GetSeedPoints().begin(), lastDel);
 
         ApplicationNodeImplementation::PreSync();
         sharedData_.setVal(GetSimulationData());
@@ -37,21 +40,17 @@ namespace viscom {
 
     void MasterNode::UpdateFrame(double currentTime, double elapsedTime)
     {
+        auto seedIterationCount = GetSimulationData().currentGlobalIterationCount_ + 1;
         GetSimulationData().currentGlobalIterationCount_ += ApplicationNodeImplementation::MAX_FRAME_ITERATIONS;
 
-        std::vector<glm::vec2> seed_points = GetSeedPoints();
+        auto& seed_points = GetSeedPoints();
         if (currentMouseButton_ == GLFW_MOUSE_BUTTON_1 && currentMouseAction_ == GLFW_PRESS) {
             const float x = currentCursorPosition_.x;
             const float y = currentCursorPosition_.y;
-            // # actual mouse position
-            seed_points.emplace_back(x, 1.0 - y);
-            // # mirrored mouse positions
-            //rdSeedPoints.emplace_back(1.0 - x, y);
-            //rdSeedPoints.emplace_back(x, y);
-            //rdSeedPoints.emplace_back(1.0 - x, 1.0 - y);
+            seed_points.emplace_back(seedIterationCount, glm::vec2(x, 1.0f - y));
         } else if (currentMouseButton_ == GLFW_MOUSE_BUTTON_2 && currentMouseAction_ == GLFW_PRESS) {
             SimulationData& sim_data = GetSimulationData();
-            sim_data.resetFrameIdx_ = sim_data.currentGlobalIterationCount_;
+            sim_data.resetFrameIdx_ = seedIterationCount;
         }
 
         ApplicationNodeImplementation::UpdateFrame(currentTime, elapsedTime);
@@ -165,7 +164,7 @@ namespace viscom {
         syncedTimestamp_.setVal(sharedData_.getVal().currentGlobalIterationCount_);
     }
 
-    void MasterNode::DecodeData()   
+    void MasterNode::DecodeData()
     {
         ApplicationNodeImplementation::DecodeData();
         sgct::SharedData::instance()->readObj(&sharedData_);
