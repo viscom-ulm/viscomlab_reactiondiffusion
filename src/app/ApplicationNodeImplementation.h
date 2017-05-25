@@ -64,7 +64,9 @@ namespace viscom {
         void ResetSimulation() const;
 
         /** The maximum iteration count per frame. */
-        static constexpr std::uint64_t MAX_FRAME_ITERATIONS = 5;
+        static constexpr std::uint64_t MAX_FRAME_ITERATIONS = 15;
+        /** The increase in iteration count per frame. */
+        static constexpr std::uint64_t FRAME_ITERATIONS_INC = 5;
 
         /** The simulation frame buffer size (x). */
         static constexpr unsigned int SIMULATION_SIZE_X = 1920 / 4;

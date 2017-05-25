@@ -171,6 +171,7 @@ namespace viscom {
 
     void ApplicationNodeImplementation::DrawFrame(FrameBuffer& fbo)
     {
+        // TODO: fix quad positioning. [5/25/2017 Sebastian Maisch]
         auto perspectiveMatrix = GetCamera()->GetViewPerspectiveMatrix();
 
         SelectOffscreenBuffer(simulationBackFBOs_)->DrawToFBO([this, &perspectiveMatrix]() {

@@ -27,7 +27,15 @@ namespace viscom {
     {
         SlaveNodeInternal::UpdateSyncedInfo();
         GetSimulationData() = sharedData_.getVal();
-        GetSeedPoints() = sharedSeedPoints_.getVal();
+        auto tmpSeedPoints = sharedSeedPoints_.getVal();
+        for (const auto& tsp : tmpSeedPoints) GetSeedPoints().push_back(tsp);
+
+        // iterate GetSeedPoints, delete all seed points before current time
+        auto lastDel = GetSeedPoints().begin();
+        for (; lastDel != GetSeedPoints().end() && lastDel->first < GetCurrentLocalIterationCount(); ++lastDel);
+        if (lastDel != GetSeedPoints().begin()) {
+            GetSeedPoints().erase(GetSeedPoints().begin(), lastDel);
+        }
     }
 
     void SlaveNode::EncodeData()

@@ -27,21 +27,23 @@ namespace viscom {
 
     void MasterNode::PreSync()
     {
+        ApplicationNodeImplementation::PreSync();
+        sharedData_.setVal(GetSimulationData());
+        sharedSeedPoints_.setVal(GetSeedPoints());
+
         auto syncPoint = syncedTimestamp_.getVal();
         // iterate GetSeedPoints, delete all seed points before syncPoint
         auto lastDel = GetSeedPoints().begin();
         for (; lastDel != GetSeedPoints().end() && lastDel->first < syncPoint; ++lastDel);
-        GetSeedPoints().erase(GetSeedPoints().begin(), lastDel);
-
-        ApplicationNodeImplementation::PreSync();
-        sharedData_.setVal(GetSimulationData());
-        sharedSeedPoints_.setVal(GetSeedPoints());
+        if (lastDel != GetSeedPoints().begin()) {
+            GetSeedPoints().erase(GetSeedPoints().begin(), lastDel);
+        }
     }
 
     void MasterNode::UpdateFrame(double currentTime, double elapsedTime)
     {
         auto seedIterationCount = GetSimulationData().currentGlobalIterationCount_ + 1;
-        GetSimulationData().currentGlobalIterationCount_ += ApplicationNodeImplementation::MAX_FRAME_ITERATIONS;
+        GetSimulationData().currentGlobalIterationCount_ += ApplicationNodeImplementation::FRAME_ITERATIONS_INC;
 
         auto& seed_points = GetSeedPoints();
         if (currentMouseButton_ == GLFW_MOUSE_BUTTON_1 && currentMouseAction_ == GLFW_PRESS) {
