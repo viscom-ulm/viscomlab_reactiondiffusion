@@ -40,12 +40,7 @@ namespace viscom {
         FrameBufferDescriptor simulationBackFBDesc;
         simulationBackFBDesc.texDesc_.emplace_back(GL_RG32F, GL_TEXTURE_2D);
         simulationBackFBDesc.rbDesc_.emplace_back(GL_DEPTH_COMPONENT32);
-
-        auto numWindows = sgct_core::ClusterManager::instance()->getThisNodePtr()->getNumberOfWindows();
-        for (auto i = 0U; i < numWindows; ++i) {
-            auto fboSize = GetViewportQuadSize(i);
-            simulationBackFBOs_.emplace_back(fboSize.x, fboSize.y, simulationBackFBDesc);
-        }
+        simulationBackFBOs_ = CreateOffscreenBuffers(simulationBackFBDesc);
 
         raycastBackProgram_ = GetGPUProgramManager().GetResource("raycastHeightfieldBack", std::initializer_list<std::string>{ "raycastHeightfield.vert", "raycastHeightfieldBack.frag" });
         raycastBackVPLoc_ = raycastBackProgram_->getUniformLocation("viewProjectionMatrix");
@@ -135,9 +130,9 @@ namespace viscom {
             currentLocalIterationCount_ += iterations;
         }
 
-        userDistance_ = glm::length(GetCamera()->GetUserPosition());
+        userDistance_ = 4.0f;//glm::length(GetCamera()->GetUserPosition());
         auto perspectiveMatrix = GetCamera()->GetCentralPerspectiveMatrix();
-        simulationOutputSize_ = glm::vec2(simData_.simulationDrawDistance_) / glm::vec2(perspectiveMatrix[0][0], perspectiveMatrix[1][1]);
+        simulationOutputSize_ = glm::vec2(5.0f); //glm::vec2(simData_.simulationDrawDistance_) / glm::vec2(perspectiveMatrix[0][0], perspectiveMatrix[1][1]);
     }
 
     void ApplicationNodeImplementation::ResetSimulation() const
