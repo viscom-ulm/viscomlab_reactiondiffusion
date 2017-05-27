@@ -174,7 +174,7 @@ namespace viscom {
             glUseProgram(raycastBackProgram_->getProgramId());
             glUniformMatrix4fv(raycastBackVPLoc_, 1, GL_FALSE, glm::value_ptr(perspectiveMatrix));
             glUniform2fv(raycastBackQuadSizeLoc_, 1, glm::value_ptr(simulationOutputSize_));
-            glUniform1f(raycastBackDistanceLoc_, simData_.simulationDrawDistance_ - userDistance_);
+            glUniform1f(raycastBackDistanceLoc_, simData_.simulationDrawDistance_);
             glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         });
 
@@ -185,7 +185,7 @@ namespace viscom {
                 glUseProgram(raycastProgram_->getProgramId());
                 glUniformMatrix4fv(raycastVPLoc_, 1, GL_FALSE, glm::value_ptr(perspectiveMatrix));
                 glUniform2fv(raycastQuadSizeLoc_, 1, glm::value_ptr(simulationOutputSize_));
-                glUniform1f(raycastDistanceLoc_, simData_.simulationDrawDistance_ - simData_.simulationHeight_ - userDistance_);
+                glUniform1f(raycastDistanceLoc_, simData_.simulationDrawDistance_ - simData_.simulationHeight_);
                 glUniform1f(raycastSimHeightLoc_, simData_.simulationHeight_);
                 glUniform3fv(raycastCamPosLoc_, 1, glm::value_ptr(camPos));
                 glUniform1f(raycastEtaLoc_, simData_.eta_);
