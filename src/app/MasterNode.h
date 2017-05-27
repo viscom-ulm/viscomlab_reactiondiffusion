@@ -9,6 +9,9 @@
 #pragma once
 
 #include "../app/ApplicationNodeImplementation.h"
+#ifdef WITH_TUIO
+#include "core/TuioInputWrapper.h"
+#endif
 
 class TuioInputWrapper;
 
@@ -23,7 +26,6 @@ namespace viscom {
         virtual void PreSync() override;
         virtual void UpdateFrame(double currentTime, double elapsedTime) override;
         virtual void Draw2D(FrameBuffer& fbo) override;
-
         virtual bool MouseButtonCallback(int button, int action) override;
         virtual bool MousePosCallback(double x, double y) override;
 
