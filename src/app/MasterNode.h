@@ -9,6 +9,11 @@
 #pragma once
 
 #include "../app/ApplicationNodeImplementation.h"
+#ifdef WITH_TUIO
+#include "core/TuioInputWrapper.h"
+#endif
+
+class TuioInputWrapper;
 
 namespace viscom {
 
@@ -18,17 +23,33 @@ namespace viscom {
         explicit MasterNode(ApplicationNodeInternal* appNode);
         virtual ~MasterNode() override;
 
-        void InitOpenGL() override;
-        void PreSync() override;
-        void DrawFrame(FrameBuffer& fbo) override;
-        void Draw2D(FrameBuffer& fbo) override;
-        void CleanUp() override;
+        virtual void PreSync() override;
+        virtual void UpdateFrame(double currentTime, double elapsedTime) override;
+        virtual void Draw2D(FrameBuffer& fbo) override;
+        virtual bool MouseButtonCallback(int button, int action) override;
+        virtual bool MousePosCallback(double x, double y) override;
 
-        bool KeyboardCallback(int key, int scancode, int action, int mods) override;
-        bool CharCallback(unsigned int character, int mods) override;
-        bool MouseButtonCallback(int button, int action) override;
-        bool MousePosCallback(double x, double y) override;
-        bool MouseScrollCallback(double xoffset, double yoffset) override;
+#ifdef WITH_TUIO
+        virtual bool AddTuioCursor(TUIO::TuioCursor *tcur) override;
+        virtual bool UpdateTuioCursor(TUIO::TuioCursor *tcur) override;
+        virtual bool RemoveTuioCursor(TUIO::TuioCursor *tcur) override;
+#endif
 
+        virtual void EncodeData() override;
+        virtual void DecodeData() override;
+
+    private:
+        /** Holds the data the master shares. */
+        sgct::SharedObject<SimulationData> sharedData_;
+        sgct::SharedVector<SeedPoint> sharedSeedPoints_;
+        sgct::SharedUInt64 syncedTimestamp_;
+
+        /** store mouse button state */
+        int currentMouseAction_ = -1;
+        int currentMouseButton_ = -1;
+        /** store mouse position for seed point generation */
+        glm::vec2 currentMouseCursorPosition_ = glm::vec2{0.0f};
+        /** Store tuio cursor positions. */
+        std::vector<std::pair<int, glm::vec2>> tuioCursorPositions_;
     };
 }

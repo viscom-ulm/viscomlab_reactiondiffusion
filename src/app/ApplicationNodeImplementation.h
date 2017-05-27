@@ -14,6 +14,31 @@
 namespace viscom {
 
     class MeshRenderable;
+    class FullscreenQuad;
+
+    struct SimulationData {
+        /** The distance the simulation will be drawn at. */
+        float simulationDrawDistance_ = 15.0f;
+        /** The simulation height field height. */
+        float simulationHeight_ = 0.1f;
+        /** The relative index of refraction used for raycasting. */
+        float eta_ = 1.5f;
+        /** The absorption coefficient. */
+        glm::vec3 sigma_a_ = glm::vec3(2.0f);
+        /** The current global iteration count. */
+        std::uint64_t currentGlobalIterationCount_ = 0;
+        /** frame at which the simulation should be reset */
+        size_t resetFrameIdx_ = 0;
+
+        /** reaction diffusion parameters */
+        float diffusion_rate_a_ = 1.0f;
+        float diffusion_rate_b_ = 0.5f;
+        float feed_rate_ = 0.055f;
+        float kill_rate_ = 0.062f;
+        float dt_ = 1.0f;
+        float seed_point_radius_ = 0.1f;
+        bool use_manhattan_distance_ = true;
+    };
 
     class ApplicationNodeImplementation : public ApplicationNodeBase
     {
@@ -31,43 +56,98 @@ namespace viscom {
         virtual void DrawFrame(FrameBuffer& fbo) override;
         virtual void CleanUp() override;
 
-        virtual bool KeyboardCallback(int key, int scancode, int action, int mods) override;
+        using SeedPoint = std::pair<std::size_t, glm::vec2>;
+
+        std::uint64_t& GetCurrentLocalIterationCount() { return currentLocalIterationCount_; }
+        SimulationData& GetSimulationData() { return simData_; }
+        std::vector<SeedPoint>& GetSeedPoints() { return seed_points_; }
+        void ResetSimulation() const;
+
+        /** The maximum iteration count per frame. */
+        static constexpr std::uint64_t MAX_FRAME_ITERATIONS = 15;
+        /** The increase in iteration count per frame. */
+        static constexpr std::uint64_t FRAME_ITERATIONS_INC = 5;
+
+        /** The simulation frame buffer size (x). */
+        static constexpr unsigned int SIMULATION_SIZE_X = 1920 / 4;
+        /** The simulation frame buffer size (y). */
+        static constexpr unsigned int SIMULATION_SIZE_Y = 1080 / 4;
 
     private:
-        /** Holds the shader program for drawing the background. */
-        std::shared_ptr<GPUProgram> backgroundProgram_;
-        /** Holds the location of the MVP matrix. */
-        GLint backgroundMVPLoc_ = -1;
+        /** The current local iteration count. */
+        std::uint64_t currentLocalIterationCount_ = 0;
+        /** Holds the simulation data. */
+        SimulationData simData_;
 
-        /** Holds the shader program for drawing the foreground triangle. */
-        std::shared_ptr<GPUProgram> triangleProgram_;
-        /** Holds the location of the MVP matrix. */
-        GLint triangleMVPLoc_ = -1;
+        /** Toggle switch for iteration step */
+        bool iterationToggle_ = true;
+        /** stores seed points */
+        std::vector<SeedPoint> seed_points_;
 
-        /** Holds the shader program for drawing the foreground teapot. */
-        std::shared_ptr<GPUProgram> teapotProgram_;
-        /** Holds the location of the model matrix. */
-        GLint teapotModelMLoc_ = -1;
-        /** Holds the location of the normal matrix. */
-        GLint teapotNormalMLoc_ = -1;
+        /** Uniform Location for texture sampler of previous iteration step */
+        GLint rdPrevIterationTextureLoc_ = -1;
+        GLint rdDiffusionRateALoc_ = -1;
+        GLint rdDiffusionRateBLoc_ = -1;
+        GLint rdFeedRateLoc_ = -1;
+        GLint rdKillRateLoc_ = -1;
+        GLint rdDtLoc_ = -1;
+        GLint rdSeedPointRadiusLoc_ = -1;
+        GLint rdNumSeedPointsLoc_ = -1;
+        GLint rdSeedPointsLoc_ = -1;
+        GLint rdUseManhattenDistanceLoc_ = -1;
+
+        /** Program to compute reaction diffusion step */
+        std::unique_ptr<FullscreenQuad> reactionDiffusionFullScreenQuad_;
+
+        /** The frame buffer object for the simulation. */
+        std::unique_ptr<FrameBuffer> reactDiffuseFBO_;
+        /** The frame buffer objects for the simulation height field back. */
+        std::vector<FrameBuffer> simulationBackFBOs_;
+
+        /** Output size of the simulation. */
+        glm::vec2 simulationOutputSize_;
+        /** The distance to the user. */
+        float userDistance_;
+
+        /** Holds the shader program for raycasting the height field back side. */
+        std::shared_ptr<GPUProgram> raycastBackProgram_;
         /** Holds the location of the VP matrix. */
-        GLint teapotVPLoc_ = -1;
+        GLint raycastBackVPLoc_ = -1;
+        /** Holds the location of the simulation quad size. */
+        GLint raycastBackQuadSizeLoc_ = -1;
+        /** Holds the location of the simulation quad distance. */
+        GLint raycastBackDistanceLoc_ = -1;
 
-        /** Holds the number of vertices of the background grid. */
-        unsigned int numBackgroundVertices_ = 0;
-        /** Holds the vertex buffer for the background grid. */
-        GLuint vboBackgroundGrid_ = 0;
-        /** Holds the vertex array object for the background grid. */
-        GLuint vaoBackgroundGrid_ = 0;
+        /** Holds the shader program for raycasting the height field. */
+        std::shared_ptr<GPUProgram> raycastProgram_;
+        /** Holds the location of the VP matrix. */
+        GLint raycastVPLoc_ = -1;
+        /** Holds the location of the simulation quad size. */
+        GLint raycastQuadSizeLoc_ = -1;
+        /** Holds the location of the simulation quad distance. */
+        GLint raycastDistanceLoc_ = -1;
+        /** Holds the location of the simulation height. */
+        GLint raycastSimHeightLoc_ = -1;
+        /** Holds the location of the camera position. */
+        GLint raycastCamPosLoc_ = -1;
+        /** Holds the location of index of refraction. */
+        GLint raycastEtaLoc_ = -1;
+        /** Holds the location of the absorption coefficient. */
+        GLint raycastSigmaALoc_ = -1;
+        /** Holds the location of the environment map. */
+        GLint raycastEnvMapLoc_ = -1;
+        /** Holds the location of the background texture. */
+        GLint raycastBGTexLoc_ = -1;
+        /** Holds the location of the height texture. */
+        GLint raycastHeightTextureLoc_ = -1;
+        /** Holds the location of the back position texture. */
+        GLint raycastPositionBackTexLoc_ = -1;
 
-        /** Holds the teapot mesh. */
-        std::shared_ptr<Mesh> teapotMesh_;
-        /** Holds the teapot mesh renderable. */
-        std::unique_ptr<MeshRenderable> teapotRenderable_;
-
-        glm::mat4 triangleModelMatrix_;
-        glm::mat4 teapotModelMatrix_;
-        glm::vec3 camPos_;
-        glm::vec3 camRot_;
+        /** Holds the dummy VAO for the simulation quad. */
+        GLuint simDummyVAO_ = 0;
+        /** Holds the background texture for the simulation. */
+        std::shared_ptr<Texture> backgroundTexture_;
+        /** Holds the environment map texture. */
+        std::shared_ptr<Texture> environmentMap_;
     };
 }

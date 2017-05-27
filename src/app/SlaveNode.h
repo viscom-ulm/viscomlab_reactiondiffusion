@@ -19,6 +19,15 @@ namespace viscom {
         virtual ~SlaveNode() override;
 
         void Draw2D(FrameBuffer& fbo) override;
+        virtual void UpdateSyncedInfo() override;
+
+        virtual void EncodeData() override;
+        virtual void DecodeData() override;
+
+    private:
+        /** Holds the data shared by the master. */
+        sgct::SharedObject<SimulationData> sharedData_;
+        sgct::SharedVector<SeedPoint> sharedSeedPoints_;
 
     };
 }

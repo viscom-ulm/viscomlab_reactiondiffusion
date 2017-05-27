@@ -10,11 +10,18 @@
 #include "Vertices.h"
 #include <imgui.h>
 #include "core/gfx/mesh/MeshRenderable.h"
+#include "core/gfx/FullscreenQuad.h"
 #include "core/imgui/imgui_impl_glfw_gl3.h"
+#include <iostream>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+#undef max
+#undef min
+
+#include <iostream>
 
 namespace viscom {
 
@@ -27,77 +34,133 @@ namespace viscom {
 
     void ApplicationNodeImplementation::InitOpenGL()
     {
-        backgroundProgram_ = GetGPUProgramManager().GetResource("backgroundGrid", std::initializer_list<std::string>{ "backgroundGrid.vert", "backgroundGrid.frag" });
-        backgroundMVPLoc_ = backgroundProgram_->getUniformLocation("MVP");
+        FrameBufferDescriptor reactDiffuseFBDesc;
+        reactDiffuseFBDesc.texDesc_.emplace_back(GL_RG32F, GL_TEXTURE_2D);
+        reactDiffuseFBDesc.texDesc_.emplace_back(GL_RG32F, GL_TEXTURE_2D);
+        reactDiffuseFBDesc.texDesc_.emplace_back(GL_R32F, GL_TEXTURE_2D);
+        reactDiffuseFBO_ = std::make_unique<FrameBuffer>(SIMULATION_SIZE_X, SIMULATION_SIZE_Y, reactDiffuseFBDesc);
 
-        triangleProgram_ = GetGPUProgramManager().GetResource("foregroundTriangle", std::initializer_list<std::string>{ "foregroundTriangle.vert", "foregroundTriangle.frag" });
-        triangleMVPLoc_ = triangleProgram_->getUniformLocation("MVP");
+        FrameBufferDescriptor simulationBackFBDesc;
+        simulationBackFBDesc.texDesc_.emplace_back(GL_RG32F, GL_TEXTURE_2D);
+        simulationBackFBDesc.rbDesc_.emplace_back(GL_DEPTH_COMPONENT32);
+        simulationBackFBOs_ = CreateOffscreenBuffers(simulationBackFBDesc);
 
-        teapotProgram_ = GetGPUProgramManager().GetResource("foregroundMesh", std::initializer_list<std::string>{ "foregroundMesh.vert", "foregroundMesh.frag" });
-        teapotModelMLoc_ = teapotProgram_->getUniformLocation("modelMatrix");
-        teapotNormalMLoc_ = teapotProgram_->getUniformLocation("normalMatrix");
-        teapotVPLoc_ = teapotProgram_->getUniformLocation("viewProjectionMatrix");
+        raycastBackProgram_ = GetGPUProgramManager().GetResource("raycastHeightfieldBack", std::initializer_list<std::string>{ "raycastHeightfield.vert", "raycastHeightfieldBack.frag" });
+        raycastBackVPLoc_ = raycastBackProgram_->getUniformLocation("viewProjectionMatrix");
+        raycastBackQuadSizeLoc_ = raycastBackProgram_->getUniformLocation("quadSize");
+        raycastBackDistanceLoc_ = raycastBackProgram_->getUniformLocation("distance");
+        raycastProgram_ = GetGPUProgramManager().GetResource("raycastHeightfield", std::initializer_list<std::string>{ "raycastHeightfield.vert", "raycastHeightfield.frag" });
+        raycastVPLoc_ = raycastProgram_->getUniformLocation("viewProjectionMatrix");
+        raycastQuadSizeLoc_ = raycastProgram_->getUniformLocation("quadSize");
+        raycastDistanceLoc_ = raycastProgram_->getUniformLocation("distance");
+        raycastSimHeightLoc_ = raycastProgram_->getUniformLocation("simulationHeight");
+        raycastCamPosLoc_ = raycastProgram_->getUniformLocation("cameraPosition");
+        raycastEtaLoc_ = raycastProgram_->getUniformLocation("eta");
+        raycastSigmaALoc_ = raycastProgram_->getUniformLocation("sigma_a");
+        raycastEnvMapLoc_ = raycastProgram_->getUniformLocation("environment");
+        raycastBGTexLoc_ = raycastProgram_->getUniformLocation("backgroundTexture");
+        raycastHeightTextureLoc_ = raycastProgram_->getUniformLocation("heightTexture");
+        raycastPositionBackTexLoc_ = raycastProgram_->getUniformLocation("backPositionTexture");
 
-        std::vector<GridVertex> gridVertices;
+        reactionDiffusionFullScreenQuad_ = CreateFullscreenQuad("reactionDiffusionSimulation.frag");
+        const auto rdGpuProgram = reactionDiffusionFullScreenQuad_->GetGPUProgram();
+        rdPrevIterationTextureLoc_ = rdGpuProgram->getUniformLocation("texture_0");
+        rdDiffusionRateALoc_ = rdGpuProgram->getUniformLocation("diffusion_rate_A");
+        rdDiffusionRateBLoc_ = rdGpuProgram->getUniformLocation("diffusion_rate_B");
+        rdFeedRateLoc_ = rdGpuProgram->getUniformLocation("feed_rate");
+        rdKillRateLoc_ = rdGpuProgram->getUniformLocation("kill_rate");
+        rdDtLoc_ = rdGpuProgram->getUniformLocation("dt");
+        rdSeedPointRadiusLoc_ = rdGpuProgram->getUniformLocation("seed_point_radius");
+        rdNumSeedPointsLoc_ = rdGpuProgram->getUniformLocation("num_seed_points");
+        rdSeedPointsLoc_ = rdGpuProgram->getUniformLocation("seed_points");
+        rdUseManhattenDistanceLoc_ = rdGpuProgram->getUniformLocation("use_manhattan_distance");
 
-        auto delta = 0.125f;
-        for (auto x = -1.0f; x < 1.0f; x += delta) {
-            auto green = (x + 1.0f) / 2.0f;
+        seed_points_.clear();
+        ResetSimulation();
 
-            for (float y = -1.0; y < 1.0; y += delta) {
-                auto red = (y + 1.0f) / 2.0f;
-
-                auto dx = 0.004f;
-                auto dy = 0.004f;
-
-                gridVertices.emplace_back(glm::vec3(x + dx, y + dy, -1.0f), glm::vec4(red, green, 0.0f, 1.0f));//right top
-                gridVertices.emplace_back(glm::vec3(x - dx + delta, y + dy, -1.0f), glm::vec4(red, green, 0.0f, 1.0f));//left top
-                gridVertices.emplace_back(glm::vec3(x - dx + delta, y - dy + delta, -1.0f), glm::vec4(red, green, 0.0f, 1.0f));//left bottom
-
-                gridVertices.emplace_back(glm::vec3(x - dx + delta, y - dy + delta, -1.0f), glm::vec4(red, green, 0.0f, 1.0f));//left bottom
-                gridVertices.emplace_back(glm::vec3(x + dx, y - dy + delta, -1.0f), glm::vec4(red, green, 0.0f, 1.0f));//right bottom
-                gridVertices.emplace_back(glm::vec3(x + dx, y + dy, -1.0f), glm::vec4(red, green, 0.0f, 1.0f));//right top
-            }
-        }
-
-        numBackgroundVertices_ = static_cast<unsigned int>(gridVertices.size());
-
-        gridVertices.emplace_back(glm::vec3(-0.5f, -0.5f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-        gridVertices.emplace_back(glm::vec3(0.0f, 0.5f, 0.0f), glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
-        gridVertices.emplace_back(glm::vec3(0.5f, -0.5f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
-
-        glGenBuffers(1, &vboBackgroundGrid_);
-        glBindBuffer(GL_ARRAY_BUFFER, vboBackgroundGrid_);
-        glBufferData(GL_ARRAY_BUFFER, gridVertices.size() * sizeof(GridVertex), gridVertices.data(), GL_STATIC_DRAW);
-
-        glGenVertexArrays(1, &vaoBackgroundGrid_);
-        glBindVertexArray(vaoBackgroundGrid_);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GridVertex), reinterpret_cast<GLvoid*>(offsetof(GridVertex, position_)));
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(GridVertex), reinterpret_cast<GLvoid*>(offsetof(GridVertex, color_)));
-        glBindVertexArray(0);
-
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-        teapotMesh_ = GetMeshManager().GetResource("/models/teapot/teapot.obj");
-        teapotRenderable_ = MeshRenderable::create<SimpleMeshVertex>(teapotMesh_.get(), teapotProgram_.get());
+        glGenVertexArrays(1, &simDummyVAO_);
+        backgroundTexture_ = GetTextureManager().GetResource("models/teapot/default.png");
+        environmentMap_ = GetTextureManager().GetResource("textures/grace_probe.hdr");
     }
 
     void ApplicationNodeImplementation::UpdateFrame(double currentTime, double)
     {
-        GetCamera()->SetPosition(camPos_);
-        glm::quat pitchQuat = glm::angleAxis(camRot_.x, glm::vec3(1.0f, 0.0f, 0.0f));
-        glm::quat yawQuat = glm::angleAxis(camRot_.y, glm::vec3(0.0f, 1.0f, 0.0f));
-        glm::quat rollQuat = glm::angleAxis(camRot_.z, glm::vec3(0.0f, 0.0f, 1.0f));
-        GetCamera()->SetOrientation(yawQuat * pitchQuat * rollQuat);
+        static const std::vector<unsigned int> drawBuffers0{{0, 2}};
+        static const std::vector<unsigned int> drawBuffers1{{1, 2}};
 
-        triangleModelMatrix_ = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 0.0f, 0.0f)), static_cast<float>(currentTime), glm::vec3(0.0f, 1.0f, 0.0f));
-        teapotModelMatrix_ = glm::scale(glm::rotate(glm::translate(glm::mat4(0.01f), glm::vec3(-3.0f, 0.0f, -5.0f)), static_cast<float>(currentTime), glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(0.01f));
+        if (currentLocalIterationCount_ < simData_.currentGlobalIterationCount_) {
+            const auto iterations = glm::min(simData_.currentGlobalIterationCount_ - currentLocalIterationCount_, MAX_FRAME_ITERATIONS);
+
+            for (std::uint64_t i = 0; i < iterations; ++i) {
+                if (currentLocalIterationCount_ + i == simData_.resetFrameIdx_) {
+                    ResetSimulation();
+                }
+
+                const std::vector<unsigned int>* currentDrawBuffers{nullptr};
+                glActiveTexture(GL_TEXTURE0);
+                if (iterationToggle_) {
+                    currentDrawBuffers = &drawBuffers0;
+                    glBindTexture(GL_TEXTURE_2D, reactDiffuseFBO_->GetTextures()[1]);
+                } else {
+                    currentDrawBuffers = &drawBuffers1;
+                    glBindTexture(GL_TEXTURE_2D, reactDiffuseFBO_->GetTextures()[0]);
+                }
+                iterationToggle_ = !iterationToggle_;
+
+                std::vector<glm::vec2> actual_seed_points;
+                for (const auto& seed_point : seed_points_) {
+                    if (currentLocalIterationCount_ + i == seed_point.first) actual_seed_points.push_back(seed_point.second);
+                }
+
+                const auto rdGpuProgram = reactionDiffusionFullScreenQuad_->GetGPUProgram();
+                glUseProgram(rdGpuProgram->getProgramId());
+                glUniform1i(rdPrevIterationTextureLoc_, 0);
+                glUniform1f(rdDiffusionRateALoc_, simData_.diffusion_rate_a_);
+                glUniform1f(rdDiffusionRateBLoc_, simData_.diffusion_rate_b_);
+                glUniform1f(rdFeedRateLoc_, simData_.feed_rate_);
+                glUniform1f(rdKillRateLoc_, simData_.kill_rate_);
+                glUniform1f(rdDtLoc_, simData_.dt_);
+                glUniform1f(rdSeedPointRadiusLoc_, simData_.seed_point_radius_);
+                glUniform1ui(rdNumSeedPointsLoc_, static_cast<GLuint>(actual_seed_points.size()));
+                glUniform2fv(rdSeedPointsLoc_, static_cast<GLsizei>(actual_seed_points.size()), reinterpret_cast<const GLfloat*>(actual_seed_points.data()));
+                glUniform1i(rdUseManhattenDistanceLoc_, simData_.use_manhattan_distance_);
+
+                // simulate
+                reactDiffuseFBO_->DrawToFBO(*currentDrawBuffers, [this]() {
+                    reactionDiffusionFullScreenQuad_->Draw();
+                });
+            }
+            currentLocalIterationCount_ += iterations;
+        }
+
+        userDistance_ = GetCamera()->GetUserPosition().z;
+        // TODO: maybe calculate the correct center? (ray through userPosition, (0,0,0) -> hits z=simulationDrawDistance_) [5/27/2017 Sebastian Maisch]
+        simulationOutputSize_ = GetConfig().nearPlaneSize_ * (userDistance_ + simData_.simulationDrawDistance_) / userDistance_;
+        //glm::vec2(simData_.simulationDrawDistance_) / glm::vec2(perspectiveMatrix[0][0], perspectiveMatrix[1][1]);
+    }
+
+    void ApplicationNodeImplementation::ResetSimulation() const
+    {
+        // clear A and B, {0, 1}
+        reactDiffuseFBO_->DrawToFBO({0, 1}, []() {
+            glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+        });
+
+        // clear mixed result, {2}
+        reactDiffuseFBO_->DrawToFBO({2}, []() {
+            glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+        });
     }
 
     void ApplicationNodeImplementation::ClearBuffer(FrameBuffer& fbo)
     {
+        SelectOffscreenBuffer(simulationBackFBOs_)->DrawToFBO([]() {
+            glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        });
+
         fbo.DrawToFBO([]() {
             glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -106,104 +169,53 @@ namespace viscom {
 
     void ApplicationNodeImplementation::DrawFrame(FrameBuffer& fbo)
     {
-        fbo.DrawToFBO([this]() {
-            glBindVertexArray(vaoBackgroundGrid_);
-            glBindBuffer(GL_ARRAY_BUFFER, vboBackgroundGrid_);
+        auto perspectiveMatrix = GetCamera()->GetViewPerspectiveMatrix();
 
-            auto MVP = GetCamera()->GetViewPerspectiveMatrix();
+        SelectOffscreenBuffer(simulationBackFBOs_)->DrawToFBO([this, &perspectiveMatrix]() {
+            glBindVertexArray(simDummyVAO_);
+            glUseProgram(raycastBackProgram_->getProgramId());
+            glUniformMatrix4fv(raycastBackVPLoc_, 1, GL_FALSE, glm::value_ptr(perspectiveMatrix));
+            glUniform2fv(raycastBackQuadSizeLoc_, 1, glm::value_ptr(simulationOutputSize_));
+            glUniform1f(raycastBackDistanceLoc_, simData_.simulationDrawDistance_);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        });
+
+        fbo.DrawToFBO([this, &perspectiveMatrix]() {
             {
-                glUseProgram(backgroundProgram_->getProgramId());
-                glUniformMatrix4fv(backgroundMVPLoc_, 1, GL_FALSE, glm::value_ptr(MVP));
-                glDrawArrays(GL_TRIANGLES, 0, numBackgroundVertices_);
-            }
+                glm::vec3 camPos = GetCamera()->GetPosition();
+                glBindVertexArray(simDummyVAO_);
+                glUseProgram(raycastProgram_->getProgramId());
+                glUniformMatrix4fv(raycastVPLoc_, 1, GL_FALSE, glm::value_ptr(perspectiveMatrix));
+                glUniform2fv(raycastQuadSizeLoc_, 1, glm::value_ptr(simulationOutputSize_));
+                glUniform1f(raycastDistanceLoc_, simData_.simulationDrawDistance_ - simData_.simulationHeight_);
+                glUniform1f(raycastSimHeightLoc_, simData_.simulationHeight_);
+                glUniform3fv(raycastCamPosLoc_, 1, glm::value_ptr(camPos));
+                glUniform1f(raycastEtaLoc_, simData_.eta_);
+                glUniform3fv(raycastSigmaALoc_, 1, glm::value_ptr(simData_.sigma_a_));
 
-            {
-                glDisable(GL_CULL_FACE);
-                auto triangleMVP = MVP * triangleModelMatrix_;
-                glUseProgram(triangleProgram_->getProgramId());
-                glUniformMatrix4fv(triangleMVPLoc_, 1, GL_FALSE, glm::value_ptr(triangleMVP));
-                glDrawArrays(GL_TRIANGLES, numBackgroundVertices_, 3);
-                glEnable(GL_CULL_FACE);
-            }
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, environmentMap_->getTextureId());
+                glUniform1i(raycastEnvMapLoc_, 0);
 
-            {
-                glUseProgram(teapotProgram_->getProgramId());
-                auto normalMatrix = glm::inverseTranspose(glm::mat3(teapotModelMatrix_));
-                glUniformMatrix4fv(teapotModelMLoc_, 1, GL_FALSE, glm::value_ptr(teapotModelMatrix_));
-                glUniformMatrix4fv(teapotNormalMLoc_, 1, GL_FALSE, glm::value_ptr(normalMatrix));
-                glUniformMatrix4fv(teapotVPLoc_, 1, GL_FALSE, glm::value_ptr(MVP));
-                teapotRenderable_->Draw(teapotModelMatrix_);
-            }
+                glActiveTexture(GL_TEXTURE0 + 1);
+                glBindTexture(GL_TEXTURE_2D, backgroundTexture_->getTextureId());
+                glUniform1i(raycastBGTexLoc_, 1);
 
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-            glBindVertexArray(0);
-            glUseProgram(0);
+                glActiveTexture(GL_TEXTURE0 + 2);
+                glBindTexture(GL_TEXTURE_2D, reactDiffuseFBO_->GetTextures()[2]);
+                glUniform1i(raycastHeightTextureLoc_, 2);
+
+                glBindImageTexture(0, SelectOffscreenBuffer(simulationBackFBOs_)->GetTextures()[0], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG32F);
+                glUniform1i(raycastPositionBackTexLoc_, 0);
+
+                glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+            }
         });
     }
 
     void ApplicationNodeImplementation::CleanUp()
     {
-        if (vaoBackgroundGrid_ != 0) glDeleteVertexArrays(1, &vaoBackgroundGrid_);
-        vaoBackgroundGrid_ = 0;
-        if (vboBackgroundGrid_ != 0) glDeleteBuffers(1, &vboBackgroundGrid_);
-        vboBackgroundGrid_ = 0;
+        if (simDummyVAO_ != 0) glDeleteVertexArrays(1, &simDummyVAO_);
+        simDummyVAO_ = 0;
     }
-
-    bool ApplicationNodeImplementation::KeyboardCallback(int key, int scancode, int action, int mods)
-    {
-        if (ApplicationNodeBase::KeyboardCallback(key, scancode, action, mods)) return true;
-
-        switch (key)
-        {
-        case GLFW_KEY_W:
-            if (action == GLFW_REPEAT || action == GLFW_PRESS) camPos_ += glm::vec3(0.0, 0.0, -0.001);
-            return true;
-
-        case GLFW_KEY_S:
-            if (action == GLFW_REPEAT || action == GLFW_PRESS) camPos_ += glm::vec3(0.0, 0.0, 0.001);
-            return true;
-
-        case GLFW_KEY_A:
-            if (action == GLFW_REPEAT || action == GLFW_PRESS) camPos_ += glm::vec3(-0.001, 0.0, 0.0);
-            return true;
-
-        case GLFW_KEY_D:
-            if (action == GLFW_REPEAT || action == GLFW_PRESS) camPos_ += glm::vec3(0.001, 0.0, 0.0);
-            return true;
-
-        case GLFW_KEY_LEFT_CONTROL:
-            if (action == GLFW_REPEAT || action == GLFW_PRESS) camPos_ += glm::vec3(0.0, -0.001, 0.0);
-            return true;
-
-        case GLFW_KEY_LEFT_SHIFT:
-            if (action == GLFW_REPEAT || action == GLFW_PRESS) camPos_ += glm::vec3(0.0, 0.001, 0.0);
-            return true;
-
-        case GLFW_KEY_UP:
-            if (action == GLFW_REPEAT || action == GLFW_PRESS) camRot_ += glm::vec3(0.001, 0.0, 0.0);
-            return true;
-
-        case GLFW_KEY_DOWN:
-            if (action == GLFW_REPEAT || action == GLFW_PRESS) camRot_ += glm::vec3(-0.001, 0.0, 0.0);
-            return true;
-
-        case GLFW_KEY_LEFT:
-            if (action == GLFW_REPEAT || action == GLFW_PRESS) camRot_ += glm::vec3(0.0, 0.001, 0.0);
-            return true;
-
-        case GLFW_KEY_RIGHT:
-            if (action == GLFW_REPEAT || action == GLFW_PRESS) camRot_ += glm::vec3(0.0, -0.001, 0.0);
-            return true;
-
-        case GLFW_KEY_Q:
-            if (action == GLFW_REPEAT || action == GLFW_PRESS) camRot_ += glm::vec3(0.0, 0.0, 0.001);
-            return true;
-
-        case GLFW_KEY_E:
-            if (action == GLFW_REPEAT || action == GLFW_PRESS) camRot_ += glm::vec3(0.0, 0.0, -0.001);
-            return true;
-        }
-        return false;
-    }
-
 }
