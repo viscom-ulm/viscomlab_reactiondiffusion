@@ -19,12 +19,6 @@ namespace viscom {
 
     MasterNode::~MasterNode() = default;
 
-
-    void MasterNode::InitOpenGL()
-    {
-        ApplicationNodeImplementation::InitOpenGL();
-    }
-
     void MasterNode::PreSync()
     {
         ApplicationNodeImplementation::PreSync();
@@ -47,20 +41,19 @@ namespace viscom {
 
         auto& seed_points = GetSeedPoints();
         if (currentMouseButton_ == GLFW_MOUSE_BUTTON_1 && currentMouseAction_ == GLFW_PRESS) {
-            const float x = currentCursorPosition_.x;
-            const float y = currentCursorPosition_.y;
+            const float x = currentMouseCursorPosition_.x;
+            const float y = currentMouseCursorPosition_.y;
             seed_points.emplace_back(seedIterationCount, glm::vec2(x, 1.0f - y));
         } else if (currentMouseButton_ == GLFW_MOUSE_BUTTON_2 && currentMouseAction_ == GLFW_PRESS) {
             SimulationData& sim_data = GetSimulationData();
             sim_data.resetFrameIdx_ = seedIterationCount;
         }
 
-        ApplicationNodeImplementation::UpdateFrame(currentTime, elapsedTime);
-    }
+        for (const auto& tpos : tuioCursorPositions_) {
+            seed_points.emplace_back(seedIterationCount, glm::vec2(tpos.second.x, 1.0f - tpos.second.y));
+        }
 
-    void MasterNode::DrawFrame(FrameBuffer& fbo)
-    {
-        ApplicationNodeImplementation::DrawFrame(fbo);
+        ApplicationNodeImplementation::UpdateFrame(currentTime, elapsedTime);
     }
 
     void MasterNode::Draw2D(FrameBuffer& fbo)
@@ -99,36 +92,8 @@ namespace viscom {
         ApplicationNodeImplementation::Draw2D(fbo);
     }
 
-    void MasterNode::CleanUp()
-    {
-        ApplicationNodeImplementation::CleanUp();
-    }
-
-    bool MasterNode::KeyboardCallback(int key, int scancode, int action, int mods)
-    {
-#ifndef VISCOM_CLIENTGUI
-        ImGui_ImplGlfwGL3_KeyCallback(key, scancode, action, mods);
-        if (ImGui::GetIO().WantCaptureKeyboard) return true;
-#endif
-        return ApplicationNodeImplementation::KeyboardCallback(key, scancode, action, mods);
-    }
-
-    bool MasterNode::CharCallback(unsigned int character, int mods)
-    {
-#ifndef VISCOM_CLIENTGUI
-        ImGui_ImplGlfwGL3_CharCallback(character);
-        if (ImGui::GetIO().WantCaptureKeyboard) return true;
-#endif
-        return ApplicationNodeImplementation::CharCallback(character, mods);
-    }
-
     bool MasterNode::MouseButtonCallback(int button, int action)
     {
-#ifndef VISCOM_CLIENTGUI
-        ImGui_ImplGlfwGL3_MouseButtonCallback(button, action, 0);
-        if (ImGui::GetIO().WantCaptureMouse) return true;
-#endif
-
         if (!ApplicationNodeImplementation::MouseButtonCallback(button, action)) {
             currentMouseAction_ = action;
             currentMouseButton_ = button;
@@ -138,25 +103,60 @@ namespace viscom {
 
     bool MasterNode::MousePosCallback(double x, double y)
     {
-#ifndef VISCOM_CLIENTGUI
-        ImGui_ImplGlfwGL3_MousePositionCallback(x, y);
-        if (ImGui::GetIO().WantCaptureMouse) return true;
-#endif
-
         if (!ApplicationNodeImplementation::MousePosCallback(x, y)) {
-            currentCursorPosition_ = glm::vec2{x, y};
+            currentMouseCursorPosition_ = glm::vec2{x, y};
         }
         return true;
     }
 
-    bool MasterNode::MouseScrollCallback(double xoffset, double yoffset)
+#ifdef WITH_TUIO
+    bool MasterNode::AddTuioCursor(TUIO::TuioCursor* tcur)
     {
-#ifndef VISCOM_CLIENTGUI
-        ImGui_ImplGlfwGL3_ScrollCallback(xoffset, yoffset);
-        if (ImGui::GetIO().WantCaptureMouse) return true;
-#endif
-        return ApplicationNodeImplementation::MouseScrollCallback(xoffset, yoffset);
+        for (int i = 0; i < tuioCursorPositions_.size(); ++i) {
+            if (tuioCursorPositions_[i].first == tcur->getCursorID()) {
+                LOG(WARNING) << "TUIO cursor (" << tcur->getCursorID() << ") added while already present.";
+                tuioCursorPositions_[i].second = glm::vec2(tcur->getX(), tcur->getY());
+                return false;
+            }
+        }
+
+        tuioCursorPositions_.emplace_back(tcur->getCursorID(), glm::vec2(tcur->getX(), tcur->getY()));
+        return true;
     }
+
+    bool MasterNode::UpdateTuioCursor(TUIO::TuioCursor* tcur)
+    {
+        for (int i = 0; i < tuioCursorPositions_.size(); ++i) {
+            if (tuioCursorPositions_[i].first == tcur->getCursorID()) {
+                tuioCursorPositions_[i].second = glm::vec2(tcur->getX(), tcur->getY());
+                return true;
+            }
+        }
+
+        LOG(WARNING) << "TUIO cursor (" << tcur->getCursorID() << ") updated but not present.";
+        return false;
+    }
+
+    bool MasterNode::RemoveTuioCursor(TUIO::TuioCursor* tcur)
+    {
+        int localId = -1;
+        for (int i = 0; i < tuioCursorPositions_.size(); ++i) {
+            if (tuioCursorPositions_[i].first == tcur->getCursorID()) {
+                localId = i;
+                break;
+            }
+        }
+
+        if (localId == -1) {
+            LOG(WARNING) << "TUIO cursor (" << tcur->getCursorID() << ") deleted but not present.";
+            return false;
+        }
+        else {
+            tuioCursorPositions_.erase(tuioCursorPositions_.begin() + localId);
+            return true;
+        }
+    }
+#endif
 
     void MasterNode::EncodeData()
     {
