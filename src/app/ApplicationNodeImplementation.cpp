@@ -130,9 +130,10 @@ namespace viscom {
             currentLocalIterationCount_ += iterations;
         }
 
-        userDistance_ = 4.0f;//glm::length(GetCamera()->GetUserPosition());
-        auto perspectiveMatrix = GetCamera()->GetCentralPerspectiveMatrix();
-        simulationOutputSize_ = glm::vec2(5.0f); //glm::vec2(simData_.simulationDrawDistance_) / glm::vec2(perspectiveMatrix[0][0], perspectiveMatrix[1][1]);
+        userDistance_ = GetCamera()->GetUserPosition().z;
+        // TODO: maybe calculate the correct center? (ray through userPosition, (0,0,0) -> hits z=simulationDrawDistance_) [5/27/2017 Sebastian Maisch]
+        simulationOutputSize_ = GetConfig().nearPlaneSize_ * (userDistance_ + simData_.simulationDrawDistance_) / userDistance_;
+        //glm::vec2(simData_.simulationDrawDistance_) / glm::vec2(perspectiveMatrix[0][0], perspectiveMatrix[1][1]);
     }
 
     void ApplicationNodeImplementation::ResetSimulation() const
@@ -166,7 +167,6 @@ namespace viscom {
 
     void ApplicationNodeImplementation::DrawFrame(FrameBuffer& fbo)
     {
-        // TODO: fix quad positioning. [5/25/2017 Sebastian Maisch]
         auto perspectiveMatrix = GetCamera()->GetViewPerspectiveMatrix();
 
         SelectOffscreenBuffer(simulationBackFBOs_)->DrawToFBO([this, &perspectiveMatrix]() {
