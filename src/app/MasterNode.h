@@ -37,5 +37,13 @@ namespace viscom {
     private:
         /** Holds the data the master shares. */
         sgct::SharedObject<SimulationData> sharedData_;
+        sgct::SharedVector<SeedPoint> sharedSeedPoints_;
+        sgct::SharedUInt64 syncedTimestamp_;
+
+        /** store mouse button state */
+        int currentMouseAction_ = -1;
+        int currentMouseButton_ = -1;
+        /** store mouse position for seed point generation */
+        glm::vec2 currentCursorPosition_ = glm::vec2{0.0f};
     };
 }

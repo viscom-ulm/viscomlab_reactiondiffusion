@@ -40,12 +40,7 @@ namespace viscom {
         FrameBufferDescriptor simulationBackFBDesc;
         simulationBackFBDesc.texDesc_.emplace_back(GL_RG32F, GL_TEXTURE_2D);
         simulationBackFBDesc.rbDesc_.emplace_back(GL_DEPTH_COMPONENT32);
-
-        auto numWindows = sgct_core::ClusterManager::instance()->getThisNodePtr()->getNumberOfWindows();
-        for (auto i = 0U; i < numWindows; ++i) {
-            auto fboSize = GetViewportQuadSize(i);
-            simulationBackFBOs_.emplace_back(fboSize.x, fboSize.y, simulationBackFBDesc);
-        }
+        simulationBackFBOs_ = CreateOffscreenBuffers(simulationBackFBDesc);
 
         raycastBackProgram_ = GetGPUProgramManager().GetResource("raycastHeightfieldBack", std::initializer_list<std::string>{ "raycastHeightfield.vert", "raycastHeightfieldBack.frag" });
         raycastBackVPLoc_ = raycastBackProgram_->getUniformLocation("viewProjectionMatrix");
@@ -77,7 +72,7 @@ namespace viscom {
         rdSeedPointsLoc_ = rdGpuProgram->getUniformLocation("seed_points");
         rdUseManhattenDistanceLoc_ = rdGpuProgram->getUniformLocation("use_manhattan_distance");
 
-        simData_.seed_points_.clear();
+        seed_points_.clear();
         ResetSimulation();
 
         glGenVertexArrays(1, &simDummyVAO_);
@@ -91,21 +86,13 @@ namespace viscom {
         static const std::vector<unsigned int> drawBuffers1{{1, 2}};
 
         if (currentLocalIterationCount_ < simData_.currentGlobalIterationCount_) {
-            if (currentMouseButton == GLFW_MOUSE_BUTTON_1 && currentMouseAction == GLFW_PRESS) {
-                simData_.seed_points_.clear();
-                const float x = currentCursorPosition.x;
-                const float y = currentCursorPosition.y;
-                simData_.seed_points_.emplace_back(x, 1.0 - y);
-                //rdSeedPoints.emplace_back(1.0 - x, y);
-                //rdSeedPoints.emplace_back(x, y);
-                //rdSeedPoints.emplace_back(1.0 - x, 1.0 - y);
-            } else if (currentMouseButton == GLFW_MOUSE_BUTTON_2 && currentMouseAction == GLFW_PRESS) {
-                ResetSimulation();
-            }
-
-            auto iterations = glm::min(simData_.currentGlobalIterationCount_ - currentLocalIterationCount_, MAX_FRAME_ITERATIONS);
+            const auto iterations = glm::min(simData_.currentGlobalIterationCount_ - currentLocalIterationCount_, MAX_FRAME_ITERATIONS);
 
             for (std::uint64_t i = 0; i < iterations; ++i) {
+                if (currentLocalIterationCount_ + i == simData_.resetFrameIdx_) {
+                    ResetSimulation();
+                }
+
                 const std::vector<unsigned int>* currentDrawBuffers{nullptr};
                 glActiveTexture(GL_TEXTURE0);
                 if (iterationToggle_) {
@@ -117,6 +104,11 @@ namespace viscom {
                 }
                 iterationToggle_ = !iterationToggle_;
 
+                std::vector<glm::vec2> actual_seed_points;
+                for (const auto& seed_point : seed_points_) {
+                    if (currentLocalIterationCount_ + i == seed_point.first) actual_seed_points.push_back(seed_point.second);
+                }
+
                 const auto rdGpuProgram = reactionDiffusionFullScreenQuad_->GetGPUProgram();
                 glUseProgram(rdGpuProgram->getProgramId());
                 glUniform1i(rdPrevIterationTextureLoc_, 0);
@@ -126,12 +118,9 @@ namespace viscom {
                 glUniform1f(rdKillRateLoc_, simData_.kill_rate_);
                 glUniform1f(rdDtLoc_, simData_.dt_);
                 glUniform1f(rdSeedPointRadiusLoc_, simData_.seed_point_radius_);
-                glUniform1ui(rdNumSeedPointsLoc_, static_cast<GLuint>(simData_.seed_points_.size()));
-                glUniform2fv(rdSeedPointsLoc_, static_cast<GLsizei>(simData_.seed_points_.size()), reinterpret_cast<const GLfloat*>(simData_.seed_points_.data()));
+                glUniform1ui(rdNumSeedPointsLoc_, static_cast<GLuint>(actual_seed_points.size()));
+                glUniform2fv(rdSeedPointsLoc_, static_cast<GLsizei>(actual_seed_points.size()), reinterpret_cast<const GLfloat*>(actual_seed_points.data()));
                 glUniform1i(rdUseManhattenDistanceLoc_, simData_.use_manhattan_distance_);
-
-                // clear seed points after they were applied
-                simData_.seed_points_.clear();
 
                 // simulate
                 reactDiffuseFBO_->DrawToFBO(*currentDrawBuffers, [this]() {
@@ -141,9 +130,10 @@ namespace viscom {
             currentLocalIterationCount_ += iterations;
         }
 
-        userDistance_ = glm::length(GetCamera()->GetUserPosition());
-        auto perspectiveMatrix = GetCamera()->GetCentralPerspectiveMatrix();
-        simulationOutputSize_ = glm::vec2(simData_.simulationDrawDistance_) / glm::vec2(perspectiveMatrix[0][0], perspectiveMatrix[1][1]);
+        userDistance_ = GetCamera()->GetUserPosition().z;
+        // TODO: maybe calculate the correct center? (ray through userPosition, (0,0,0) -> hits z=simulationDrawDistance_) [5/27/2017 Sebastian Maisch]
+        simulationOutputSize_ = GetConfig().nearPlaneSize_ * (userDistance_ + simData_.simulationDrawDistance_) / userDistance_;
+        //glm::vec2(simData_.simulationDrawDistance_) / glm::vec2(perspectiveMatrix[0][0], perspectiveMatrix[1][1]);
     }
 
     void ApplicationNodeImplementation::ResetSimulation() const
@@ -184,7 +174,7 @@ namespace viscom {
             glUseProgram(raycastBackProgram_->getProgramId());
             glUniformMatrix4fv(raycastBackVPLoc_, 1, GL_FALSE, glm::value_ptr(perspectiveMatrix));
             glUniform2fv(raycastBackQuadSizeLoc_, 1, glm::value_ptr(simulationOutputSize_));
-            glUniform1f(raycastBackDistanceLoc_, simData_.simulationDrawDistance_ - userDistance_);
+            glUniform1f(raycastBackDistanceLoc_, simData_.simulationDrawDistance_);
             glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         });
 
@@ -195,7 +185,7 @@ namespace viscom {
                 glUseProgram(raycastProgram_->getProgramId());
                 glUniformMatrix4fv(raycastVPLoc_, 1, GL_FALSE, glm::value_ptr(perspectiveMatrix));
                 glUniform2fv(raycastQuadSizeLoc_, 1, glm::value_ptr(simulationOutputSize_));
-                glUniform1f(raycastDistanceLoc_, simData_.simulationDrawDistance_ - simData_.simulationHeight_ - userDistance_);
+                glUniform1f(raycastDistanceLoc_, simData_.simulationDrawDistance_ - simData_.simulationHeight_);
                 glUniform1f(raycastSimHeightLoc_, simData_.simulationHeight_);
                 glUniform3fv(raycastCamPosLoc_, 1, glm::value_ptr(camPos));
                 glUniform1f(raycastEtaLoc_, simData_.eta_);
@@ -226,28 +216,4 @@ namespace viscom {
         if (simDummyVAO_ != 0) glDeleteVertexArrays(1, &simDummyVAO_);
         simDummyVAO_ = 0;
     }
-
-    bool ApplicationNodeImplementation::MouseButtonCallback(int button, int action)
-    {
-        bool event_handeled{false};
-
-        if (!ApplicationNodeBase::MouseButtonCallback(button, action)) {
-            currentMouseAction = action;
-            currentMouseButton = button;
-        }
-
-        return event_handeled;
-    }
-
-    bool ApplicationNodeImplementation::MousePosCallback(double x, double y)
-    {
-        bool event_handeled{false};
-
-        if (!ApplicationNodeBase::MousePosCallback(x, y)) {
-            currentCursorPosition = glm::vec2{x, y};
-        }
-
-        return event_handeled;
-    }
-
 }

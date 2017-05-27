@@ -27,6 +27,8 @@ namespace viscom {
         glm::vec3 sigma_a_ = glm::vec3(2.0f);
         /** The current global iteration count. */
         std::uint64_t currentGlobalIterationCount_ = 0;
+        /** frame at which the simulation should be reset */
+        size_t resetFrameIdx_ = 0;
 
         /** reaction diffusion parameters */
         float diffusion_rate_a_ = 1.0f;
@@ -35,7 +37,6 @@ namespace viscom {
         float kill_rate_ = 0.062f;
         float dt_ = 1.0f;
         float seed_point_radius_ = 0.1f;
-        std::vector<glm::vec2> seed_points_;
         bool use_manhattan_distance_ = true;
     };
 
@@ -55,15 +56,17 @@ namespace viscom {
         virtual void DrawFrame(FrameBuffer& fbo) override;
         virtual void CleanUp() override;
 
-        virtual bool MouseButtonCallback(int button, int action) override;
-        virtual bool MousePosCallback(double x, double y) override;
+        using SeedPoint = std::pair<std::size_t, glm::vec2>;
 
         std::uint64_t& GetCurrentLocalIterationCount() { return currentLocalIterationCount_; }
         SimulationData& GetSimulationData() { return simData_; }
+        std::vector<SeedPoint>& GetSeedPoints() { return seed_points_; }
         void ResetSimulation() const;
 
         /** The maximum iteration count per frame. */
-        static constexpr std::uint64_t MAX_FRAME_ITERATIONS = 5;
+        static constexpr std::uint64_t MAX_FRAME_ITERATIONS = 15;
+        /** The increase in iteration count per frame. */
+        static constexpr std::uint64_t FRAME_ITERATIONS_INC = 5;
 
         /** The simulation frame buffer size (x). */
         static constexpr unsigned int SIMULATION_SIZE_X = 1920 / 4;
@@ -78,11 +81,8 @@ namespace viscom {
 
         /** Toggle switch for iteration step */
         bool iterationToggle_ = true;
-        /** store mouse position for seed point generation */
-        glm::vec2 currentCursorPosition = glm::vec2{0.0f};
-        /** store mouse button state */
-        int currentMouseAction = -1;
-        int currentMouseButton = -1;
+        /** stores seed points */
+        std::vector<SeedPoint> seed_points_;
 
         /** Uniform Location for texture sampler of previous iteration step */
         GLint rdPrevIterationTextureLoc_ = -1;

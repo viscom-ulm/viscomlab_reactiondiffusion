@@ -106,6 +106,7 @@ void main()
 
     color = vec4(sqrt(R * cReflection + T * cRefraction), 1.0);
     
+    // color = vec4(t0.xy, 0.0, 1.0);
     // vec3 l = lightPos;// vec3(0.5, 0.5, 5.0);
     // float diffuse = 0.8* clamp(dot(normal, l - t), 0.0, 1.0);
     // color = vec4(normal * 0.5 + 0.5, 1.0);
@@ -113,5 +114,5 @@ void main()
     // color = vec4(t.x, t.y, h, 1);
     // vec3 t = refract(v, normal, eta);
 
-    // color = vec4(texture(heightTexture, t0.xy).rrr, 1.0);
+    //color = vec4(texture(heightTexture, t0.xy).rrr, 1.0);
 }
