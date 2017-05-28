@@ -14,7 +14,9 @@
 #include "core/imgui/imgui_impl_glfw_gl3.h"
 #include <iostream>
 #include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #undef max
 #undef min
@@ -160,8 +162,7 @@ namespace viscom {
         });
 
         fbo.DrawToFBO([]() {
-            auto colorPtr = sgct::Engine::instance()->getClearColor();
-            glClearColor(colorPtr[0], colorPtr[1], colorPtr[2], colorPtr[3]);
+            glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         });
     }

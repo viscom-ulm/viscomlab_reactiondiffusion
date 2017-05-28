@@ -19,6 +19,10 @@ namespace viscom {
 
     void SlaveNode::Draw2D(FrameBuffer& fbo)
     {
+#ifdef VISCOM_CLIENTGUI
+        ImGui::ShowTestWindow();
+#endif
+
         // always do this call last!
         SlaveNodeInternal::Draw2D(fbo);
     }
@@ -26,9 +30,11 @@ namespace viscom {
     void SlaveNode::UpdateSyncedInfo()
     {
         SlaveNodeInternal::UpdateSyncedInfo();
+#ifdef VISCOM_USE_SGCT
         GetSimulationData() = sharedData_.getVal();
         auto tmpSeedPoints = sharedSeedPoints_.getVal();
         for (const auto& tsp : tmpSeedPoints) GetSeedPoints().push_back(tsp);
+#endif
 
         // iterate GetSeedPoints, delete all seed points before current time
         auto lastDel = GetSeedPoints().begin();
@@ -38,6 +44,7 @@ namespace viscom {
         }
     }
 
+#ifdef VISCOM_USE_SGCT
     void SlaveNode::EncodeData()
     {
         SlaveNodeInternal::EncodeData();
@@ -51,5 +58,5 @@ namespace viscom {
         sgct::SharedData::instance()->readObj(&sharedData_);
         sgct::SharedData::instance()->readVector(&sharedSeedPoints_);
     }
-
+#endif
 }

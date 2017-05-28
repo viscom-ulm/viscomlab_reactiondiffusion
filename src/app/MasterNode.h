@@ -35,14 +35,18 @@ namespace viscom {
         virtual bool RemoveTuioCursor(TUIO::TuioCursor *tcur) override;
 #endif
 
+#ifdef VISCOM_USE_SGCT
         virtual void EncodeData() override;
         virtual void DecodeData() override;
+#endif
 
     private:
+#ifdef VISCOM_USE_SGCT
         /** Holds the data the master shares. */
         sgct::SharedObject<SimulationData> sharedData_;
         sgct::SharedVector<SeedPoint> sharedSeedPoints_;
         sgct::SharedUInt64 syncedTimestamp_;
+#endif
 
         /** store mouse button state */
         int currentMouseAction_ = -1;

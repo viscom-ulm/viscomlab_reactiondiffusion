@@ -22,10 +22,14 @@ namespace viscom {
     void MasterNode::PreSync()
     {
         ApplicationNodeImplementation::PreSync();
+#ifdef VISCOM_USE_SGCT
         sharedData_.setVal(GetSimulationData());
         sharedSeedPoints_.setVal(GetSeedPoints());
 
         auto syncPoint = syncedTimestamp_.getVal();
+#else
+        auto syncPoint = GetCurrentLocalIterationCount();
+#endif
         // iterate GetSeedPoints, delete all seed points before syncPoint
         auto lastDel = GetSeedPoints().begin();
         for (; lastDel != GetSeedPoints().end() && lastDel->first < syncPoint; ++lastDel);
@@ -158,6 +162,7 @@ namespace viscom {
     }
 #endif
 
+#ifdef VISCOM_USE_SGCT
     void MasterNode::EncodeData()
     {
         ApplicationNodeImplementation::EncodeData();
@@ -172,5 +177,5 @@ namespace viscom {
         sgct::SharedData::instance()->readObj(&sharedData_);
         sgct::SharedData::instance()->readVector(&sharedSeedPoints_);
     }
-
+#endif
 }
