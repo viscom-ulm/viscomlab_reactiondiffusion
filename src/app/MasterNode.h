@@ -57,13 +57,18 @@ namespace viscom {
         /** Store tuio cursor positions. */
         std::vector<std::pair<int, glm::vec2>> tuioCursorPositions_;
 
+        void LoadPresetList();
+        void UpdatePresetNames();
+        void LoadPreset(int preset);
+        void SavePreset(const std::string& presetName);
+
+        /** The list of preset names. */
+        std::vector<std::pair<std::string, std::string>> presetNames_;
+        /** The list of preset names (as c strings for imgui). */
+        std::vector<const char*> presetNamesCStr_;
         /** The list of renderer names. */
         std::vector<std::string> rendererNames_;
         /** The list of renderer names (as c strings for imgui). */
         std::vector<const char*> rendererNamesCStr_;
-        /** The list of preset names. */
-        std::vector<std::string> presetNames_;
-        /** The list of preset names (as c strings for imgui). */
-        std::vector<const char*> presetNamesCStr_;
     };
 }

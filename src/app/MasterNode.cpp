@@ -10,6 +10,7 @@
 #include <imgui.h>
 #include "core/imgui/imgui_impl_glfw_gl3.h"
 #include "renderers/RDRenderer.h"
+#include <fstream>
 
 namespace viscom {
 
@@ -23,6 +24,8 @@ namespace viscom {
     void MasterNode::InitOpenGL()
     {
         ApplicationNodeImplementation::InitOpenGL();
+
+        LoadPresetList();
 
         for (const auto& renderer : GetRenderers()) {
             rendererNames_.push_back(renderer->GetName());
@@ -82,6 +85,15 @@ namespace viscom {
             ImGui::Begin("Simulation Parameters");
             {
                 SimulationData& simData = GetSimulationData();
+
+                if (presetNames_.size() > 1) {
+                    int selectedPreset = 0;
+                    if (ImGui::Combo("Select Preset", &selectedPreset, presetNamesCStr_.data(), static_cast<int>(presetNamesCStr_.size()))) LoadPreset(selectedPreset);
+                }
+                static std::string presetName;
+                presetName.resize(255);
+                ImGui::InputText("Preset Name", presetName.data(), static_cast<int>(presetName.size()));
+                if (ImGui::Button("Save Preset")) SavePreset(presetName.c_str());
 
                 ImGui::Combo("Select Renderer", &simData.currentRenderer_, rendererNamesCStr_.data(), static_cast<int>(rendererNamesCStr_.size()));
 
@@ -189,4 +201,88 @@ namespace viscom {
         sgct::SharedData::instance()->readVector(&sharedSeedPoints_);
     }
 #endif
+
+    void MasterNode::LoadPresetList()
+    {
+        presetNames_.emplace_back("None", "");
+
+        std::string presetListFile = GetConfig().resourceSearchPaths_.back() + "/presetList.txt";
+        if (!utils::file_exists(presetListFile)) return;
+
+        std::ifstream ifs(presetListFile);
+        std::string str;
+        while (ifs >> str && ifs.good()) {
+            std::string presetName = str;
+            std::string presetFile;
+            ifs >> presetFile;
+            presetNames_.emplace_back(presetName, presetFile);
+        }
+
+        UpdatePresetNames();
+    }
+
+    void MasterNode::UpdatePresetNames()
+    {
+        presetNamesCStr_.clear();
+        for (const auto& pName : presetNames_) {
+            presetNamesCStr_.push_back(pName.first.c_str());
+        }
+    }
+
+    void MasterNode::LoadPreset(int preset)
+    {
+        if (preset == 0) return;
+
+        std::string presetFile = GetConfig().resourceSearchPaths_.back() + "/" + presetNames_[preset].second;
+        if (!utils::file_exists(presetFile)) return;
+
+        std::ifstream ifs(presetFile);
+        std::string str;
+
+        while (ifs >> str && ifs.good()) {
+            if (str == "simulationDrawDistance=") ifs >> GetSimulationData().simulationDrawDistance_;
+            else if (str == "simulationHeight=") ifs >> GetSimulationData().simulationHeight_;
+            else if (str == "eta=") ifs >> GetSimulationData().eta_;
+            else if (str == "sigma_a.r=") ifs >> GetSimulationData().sigma_a_.r;
+            else if (str == "sigma_a.g=") ifs >> GetSimulationData().sigma_a_.g;
+            else if (str == "sigma_a.b=") ifs >> GetSimulationData().sigma_a_.b;
+            else if (str == "diffusion_rate_a=") ifs >> GetSimulationData().diffusion_rate_a_;
+            else if (str == "diffusion_rate_b=") ifs >> GetSimulationData().diffusion_rate_b_;
+            else if (str == "feed_rate=") ifs >> GetSimulationData().feed_rate_;
+            else if (str == "kill_rate=") ifs >> GetSimulationData().kill_rate_;
+            else if (str == "dt=") ifs >> GetSimulationData().dt_;
+            else if (str == "seed_point_radius=") ifs >> GetSimulationData().seed_point_radius_;
+            else if (str == "use_manhattan_distance=") ifs >> GetSimulationData().use_manhattan_distance_;
+            else if (str == "currentRenderer=") ifs >> GetSimulationData().currentRenderer_;
+        }
+    }
+
+    void MasterNode::SavePreset(const std::string& presetName)
+    {
+        std::string presetFile = GetConfig().resourceSearchPaths_.back() + "/" + presetName + ".txt";
+        std::ofstream ofs(presetFile, std::ofstream::trunc);
+
+        ofs << "simulationDrawDistance= " << GetSimulationData().simulationDrawDistance_ << std::endl;
+        ofs << "simulationHeight= " << GetSimulationData().simulationHeight_ << std::endl;
+        ofs << "eta= " << GetSimulationData().eta_ << std::endl;
+        ofs << "sigma_a.r= " << GetSimulationData().sigma_a_.r << std::endl;
+        ofs << "sigma_a.g= " << GetSimulationData().sigma_a_.g << std::endl;
+        ofs << "sigma_a.b= " << GetSimulationData().sigma_a_.b << std::endl;
+        ofs << "diffusion_rate_a= " << GetSimulationData().diffusion_rate_a_ << std::endl;
+        ofs << "diffusion_rate_b= " << GetSimulationData().diffusion_rate_b_ << std::endl;
+        ofs << "feed_rate= " << GetSimulationData().feed_rate_ << std::endl;
+        ofs << "kill_rate= " << GetSimulationData().kill_rate_ << std::endl;
+        ofs << "dt= " << GetSimulationData().dt_ << std::endl;
+        ofs << "seed_point_radius= " << GetSimulationData().seed_point_radius_ << std::endl;
+        ofs << "use_manhattan_distance= " << GetSimulationData().use_manhattan_distance_ << std::endl;
+        ofs << "currentRenderer= " << GetSimulationData().currentRenderer_ << std::endl;
+
+        presetNames_.emplace_back(presetName, presetName + ".pst");
+        UpdatePresetNames();
+
+        std::string presetListFile = GetConfig().resourceSearchPaths_.back() + "/presetList.txt";
+
+        std::ofstream ofsList(presetListFile, std::ofstream::app);
+        if (ofsList.good()) ofsList << presetName << " " << presetName + ".txt" << std::endl;
+    }
 }
