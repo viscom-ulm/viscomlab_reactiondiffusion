@@ -21,6 +21,7 @@ namespace viscom {
         void Draw2D(FrameBuffer& fbo) override;
         virtual void UpdateSyncedInfo() override;
 
+#ifdef VISCOM_USE_SGCT
         virtual void EncodeData() override;
         virtual void DecodeData() override;
 
@@ -28,6 +29,6 @@ namespace viscom {
         /** Holds the data shared by the master. */
         sgct::SharedObject<SimulationData> sharedData_;
         sgct::SharedVector<SeedPoint> sharedSeedPoints_;
-
+#endif
     };
 }
