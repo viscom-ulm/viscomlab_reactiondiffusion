@@ -17,6 +17,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include "app/renderers/HeightfieldRaycaster.h"
+#include "app/renderers/SimpleGreyScaleRenderer.h"
 
 #undef max
 #undef min
@@ -40,27 +42,8 @@ namespace viscom {
         reactDiffuseFBDesc.texDesc_.emplace_back(GL_R32F, GL_TEXTURE_2D);
         reactDiffuseFBO_ = std::make_unique<FrameBuffer>(SIMULATION_SIZE_X, SIMULATION_SIZE_Y, reactDiffuseFBDesc);
 
-        FrameBufferDescriptor simulationBackFBDesc;
-        simulationBackFBDesc.texDesc_.emplace_back(GL_RG32F, GL_TEXTURE_2D);
-        simulationBackFBDesc.rbDesc_.emplace_back(GL_DEPTH_COMPONENT32);
-        simulationBackFBOs_ = CreateOffscreenBuffers(simulationBackFBDesc);
-
-        raycastBackProgram_ = GetGPUProgramManager().GetResource("raycastHeightfieldBack", std::initializer_list<std::string>{ "raycastHeightfield.vert", "raycastHeightfieldBack.frag" });
-        raycastBackVPLoc_ = raycastBackProgram_->getUniformLocation("viewProjectionMatrix");
-        raycastBackQuadSizeLoc_ = raycastBackProgram_->getUniformLocation("quadSize");
-        raycastBackDistanceLoc_ = raycastBackProgram_->getUniformLocation("distance");
-        raycastProgram_ = GetGPUProgramManager().GetResource("raycastHeightfield", std::initializer_list<std::string>{ "raycastHeightfield.vert", "raycastHeightfield.frag" });
-        raycastVPLoc_ = raycastProgram_->getUniformLocation("viewProjectionMatrix");
-        raycastQuadSizeLoc_ = raycastProgram_->getUniformLocation("quadSize");
-        raycastDistanceLoc_ = raycastProgram_->getUniformLocation("distance");
-        raycastSimHeightLoc_ = raycastProgram_->getUniformLocation("simulationHeight");
-        raycastCamPosLoc_ = raycastProgram_->getUniformLocation("cameraPosition");
-        raycastEtaLoc_ = raycastProgram_->getUniformLocation("eta");
-        raycastSigmaALoc_ = raycastProgram_->getUniformLocation("sigma_a");
-        raycastEnvMapLoc_ = raycastProgram_->getUniformLocation("environment");
-        raycastBGTexLoc_ = raycastProgram_->getUniformLocation("backgroundTexture");
-        raycastHeightTextureLoc_ = raycastProgram_->getUniformLocation("heightTexture");
-        raycastPositionBackTexLoc_ = raycastProgram_->getUniformLocation("backPositionTexture");
+        renderers_.push_back(std::make_unique<renderers::HeightfieldRaycaster>(this));
+        renderers_.push_back(std::make_unique<renderers::SimpleGreyScaleRenderer>(this));
 
         reactionDiffusionFullScreenQuad_ = CreateFullscreenQuad("reactionDiffusionSimulation.frag");
         const auto rdGpuProgram = reactionDiffusionFullScreenQuad_->GetGPUProgram();
@@ -73,17 +56,13 @@ namespace viscom {
         rdSeedPointRadiusLoc_ = rdGpuProgram->getUniformLocation("seed_point_radius");
         rdNumSeedPointsLoc_ = rdGpuProgram->getUniformLocation("num_seed_points");
         rdSeedPointsLoc_ = rdGpuProgram->getUniformLocation("seed_points");
-        rdUseManhattenDistanceLoc_ = rdGpuProgram->getUniformLocation("use_manhattan_distance");
+        rdUseManhattanDistanceLoc_ = rdGpuProgram->getUniformLocation("use_manhattan_distance");
 
         seed_points_.clear();
         ResetSimulation();
-
-        glGenVertexArrays(1, &simDummyVAO_);
-        backgroundTexture_ = GetTextureManager().GetResource("models/teapot/default.png");
-        environmentMap_ = GetTextureManager().GetResource("textures/grace_probe.hdr");
     }
 
-    void ApplicationNodeImplementation::UpdateFrame(double currentTime, double)
+    void ApplicationNodeImplementation::UpdateFrame(double currentTime, double elapsedTime)
     {
         static const std::vector<unsigned int> drawBuffers0{{0, 2}};
         static const std::vector<unsigned int> drawBuffers1{{1, 2}};
@@ -123,7 +102,7 @@ namespace viscom {
                 glUniform1f(rdSeedPointRadiusLoc_, simData_.seed_point_radius_);
                 glUniform1ui(rdNumSeedPointsLoc_, static_cast<GLuint>(actual_seed_points.size()));
                 glUniform2fv(rdSeedPointsLoc_, static_cast<GLsizei>(actual_seed_points.size()), reinterpret_cast<const GLfloat*>(actual_seed_points.data()));
-                glUniform1i(rdUseManhattenDistanceLoc_, simData_.use_manhattan_distance_);
+                glUniform1i(rdUseManhattanDistanceLoc_, simData_.use_manhattan_distance_);
 
                 // simulate
                 reactDiffuseFBO_->DrawToFBO(*currentDrawBuffers, [this]() {
@@ -133,10 +112,7 @@ namespace viscom {
             currentLocalIterationCount_ += iterations;
         }
 
-        userDistance_ = GetCamera()->GetUserPosition().z;
-        // TODO: maybe calculate the correct center? (ray through userPosition, (0,0,0) -> hits z=simulationDrawDistance_) [5/27/2017 Sebastian Maisch]
-        simulationOutputSize_ = GetConfig().nearPlaneSize_ * (userDistance_ + simData_.simulationDrawDistance_) / userDistance_;
-        //glm::vec2(simData_.simulationDrawDistance_) / glm::vec2(perspectiveMatrix[0][0], perspectiveMatrix[1][1]);
+        renderers_[simData_.currentRenderer_]->UpdateFrame(currentTime, elapsedTime, simData_, GetConfig().nearPlaneSize_);
     }
 
     void ApplicationNodeImplementation::ResetSimulation() const
@@ -156,66 +132,17 @@ namespace viscom {
 
     void ApplicationNodeImplementation::ClearBuffer(FrameBuffer& fbo)
     {
-        SelectOffscreenBuffer(simulationBackFBOs_)->DrawToFBO([]() {
-            glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        });
-
-        fbo.DrawToFBO([]() {
-            glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        });
+        renderers_[simData_.currentRenderer_]->ClearBuffers(fbo);
     }
 
     void ApplicationNodeImplementation::DrawFrame(FrameBuffer& fbo)
     {
         auto perspectiveMatrix = GetCamera()->GetViewPerspectiveMatrix();
-
-        SelectOffscreenBuffer(simulationBackFBOs_)->DrawToFBO([this, &perspectiveMatrix]() {
-            glBindVertexArray(simDummyVAO_);
-            glUseProgram(raycastBackProgram_->getProgramId());
-            glUniformMatrix4fv(raycastBackVPLoc_, 1, GL_FALSE, glm::value_ptr(perspectiveMatrix));
-            glUniform2fv(raycastBackQuadSizeLoc_, 1, glm::value_ptr(simulationOutputSize_));
-            glUniform1f(raycastBackDistanceLoc_, simData_.simulationDrawDistance_);
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        });
-
-        fbo.DrawToFBO([this, &perspectiveMatrix]() {
-            {
-                glm::vec3 camPos = GetCamera()->GetPosition();
-                glBindVertexArray(simDummyVAO_);
-                glUseProgram(raycastProgram_->getProgramId());
-                glUniformMatrix4fv(raycastVPLoc_, 1, GL_FALSE, glm::value_ptr(perspectiveMatrix));
-                glUniform2fv(raycastQuadSizeLoc_, 1, glm::value_ptr(simulationOutputSize_));
-                glUniform1f(raycastDistanceLoc_, simData_.simulationDrawDistance_ - simData_.simulationHeight_);
-                glUniform1f(raycastSimHeightLoc_, simData_.simulationHeight_);
-                glUniform3fv(raycastCamPosLoc_, 1, glm::value_ptr(camPos));
-                glUniform1f(raycastEtaLoc_, simData_.eta_);
-                glUniform3fv(raycastSigmaALoc_, 1, glm::value_ptr(simData_.sigma_a_));
-
-                glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, environmentMap_->getTextureId());
-                glUniform1i(raycastEnvMapLoc_, 0);
-
-                glActiveTexture(GL_TEXTURE0 + 1);
-                glBindTexture(GL_TEXTURE_2D, backgroundTexture_->getTextureId());
-                glUniform1i(raycastBGTexLoc_, 1);
-
-                glActiveTexture(GL_TEXTURE0 + 2);
-                glBindTexture(GL_TEXTURE_2D, reactDiffuseFBO_->GetTextures()[2]);
-                glUniform1i(raycastHeightTextureLoc_, 2);
-
-                glBindImageTexture(0, SelectOffscreenBuffer(simulationBackFBOs_)->GetTextures()[0], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RG32F);
-                glUniform1i(raycastPositionBackTexLoc_, 0);
-
-                glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-            }
-        });
+        renderers_[simData_.currentRenderer_]->RenderRDResults(fbo, simData_, perspectiveMatrix, reactDiffuseFBO_->GetTextures()[2]);
     }
 
     void ApplicationNodeImplementation::CleanUp()
     {
-        if (simDummyVAO_ != 0) glDeleteVertexArrays(1, &simDummyVAO_);
-        simDummyVAO_ = 0;
+        renderers_.clear();
     }
 }

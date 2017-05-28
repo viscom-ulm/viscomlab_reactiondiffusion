@@ -11,6 +11,10 @@
 #include "core/ApplicationNodeInternal.h"
 #include "core/ApplicationNodeBase.h"
 
+namespace viscom::renderers {
+    class RDRenderer;
+}
+
 namespace viscom {
 
     class MeshRenderable;
@@ -38,6 +42,8 @@ namespace viscom {
         float dt_ = 1.0f;
         float seed_point_radius_ = 0.1f;
         bool use_manhattan_distance_ = true;
+
+        int currentRenderer_ = 0;
     };
 
     class ApplicationNodeImplementation : public ApplicationNodeBase
@@ -61,6 +67,7 @@ namespace viscom {
         std::uint64_t& GetCurrentLocalIterationCount() { return currentLocalIterationCount_; }
         SimulationData& GetSimulationData() { return simData_; }
         std::vector<SeedPoint>& GetSeedPoints() { return seed_points_; }
+        const std::vector<std::unique_ptr<renderers::RDRenderer>>& GetRenderers() const { return renderers_; }
         void ResetSimulation() const;
 
         /** The maximum iteration count per frame. */
@@ -94,60 +101,14 @@ namespace viscom {
         GLint rdSeedPointRadiusLoc_ = -1;
         GLint rdNumSeedPointsLoc_ = -1;
         GLint rdSeedPointsLoc_ = -1;
-        GLint rdUseManhattenDistanceLoc_ = -1;
+        GLint rdUseManhattanDistanceLoc_ = -1;
 
         /** Program to compute reaction diffusion step */
         std::unique_ptr<FullscreenQuad> reactionDiffusionFullScreenQuad_;
-
         /** The frame buffer object for the simulation. */
         std::unique_ptr<FrameBuffer> reactDiffuseFBO_;
-        /** The frame buffer objects for the simulation height field back. */
-        std::vector<FrameBuffer> simulationBackFBOs_;
 
-        /** Output size of the simulation. */
-        glm::vec2 simulationOutputSize_;
-        /** The distance to the user. */
-        float userDistance_;
+        std::vector<std::unique_ptr<renderers::RDRenderer>> renderers_;
 
-        /** Holds the shader program for raycasting the height field back side. */
-        std::shared_ptr<GPUProgram> raycastBackProgram_;
-        /** Holds the location of the VP matrix. */
-        GLint raycastBackVPLoc_ = -1;
-        /** Holds the location of the simulation quad size. */
-        GLint raycastBackQuadSizeLoc_ = -1;
-        /** Holds the location of the simulation quad distance. */
-        GLint raycastBackDistanceLoc_ = -1;
-
-        /** Holds the shader program for raycasting the height field. */
-        std::shared_ptr<GPUProgram> raycastProgram_;
-        /** Holds the location of the VP matrix. */
-        GLint raycastVPLoc_ = -1;
-        /** Holds the location of the simulation quad size. */
-        GLint raycastQuadSizeLoc_ = -1;
-        /** Holds the location of the simulation quad distance. */
-        GLint raycastDistanceLoc_ = -1;
-        /** Holds the location of the simulation height. */
-        GLint raycastSimHeightLoc_ = -1;
-        /** Holds the location of the camera position. */
-        GLint raycastCamPosLoc_ = -1;
-        /** Holds the location of index of refraction. */
-        GLint raycastEtaLoc_ = -1;
-        /** Holds the location of the absorption coefficient. */
-        GLint raycastSigmaALoc_ = -1;
-        /** Holds the location of the environment map. */
-        GLint raycastEnvMapLoc_ = -1;
-        /** Holds the location of the background texture. */
-        GLint raycastBGTexLoc_ = -1;
-        /** Holds the location of the height texture. */
-        GLint raycastHeightTextureLoc_ = -1;
-        /** Holds the location of the back position texture. */
-        GLint raycastPositionBackTexLoc_ = -1;
-
-        /** Holds the dummy VAO for the simulation quad. */
-        GLuint simDummyVAO_ = 0;
-        /** Holds the background texture for the simulation. */
-        std::shared_ptr<Texture> backgroundTexture_;
-        /** Holds the environment map texture. */
-        std::shared_ptr<Texture> environmentMap_;
     };
 }
