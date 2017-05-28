@@ -9,6 +9,7 @@
 #include "MasterNode.h"
 #include <imgui.h>
 #include "core/imgui/imgui_impl_glfw_gl3.h"
+#include "renderers/RDRenderer.h"
 
 namespace viscom {
 
@@ -18,6 +19,19 @@ namespace viscom {
     }
 
     MasterNode::~MasterNode() = default;
+
+    void MasterNode::InitOpenGL()
+    {
+        ApplicationNodeImplementation::InitOpenGL();
+
+        for (const auto& renderer : GetRenderers()) {
+            rendererNames_.push_back(renderer->GetName());
+        }
+
+        for (const auto& rName : rendererNames_) {
+            rendererNamesCStr_.push_back(rName.c_str());
+        }
+    }
 
     void MasterNode::PreSync()
     {
@@ -69,13 +83,10 @@ namespace viscom {
             {
                 SimulationData& simData = GetSimulationData();
 
+                ImGui::Combo("Select Renderer", &simData.currentRenderer_, rendererNamesCStr_.data(), static_cast<int>(rendererNamesCStr_.size()));
+
                 if (ImGui::TreeNode("Rendering Parameters")) {
-                    ImGui::SliderFloat("Draw Distance", &simData.simulationDrawDistance_, 5.0f, 20.0f);
-                    ImGui::SliderFloat("Height", &simData.simulationHeight_, 0.02f, 0.5f);
-                    ImGui::SliderFloat("Eta", &simData.eta_, 1.0f, 5.0f);
-                    ImGui::SliderFloat("Absorption Red", &simData.sigma_a_.r, 0.0f, 100.0f);
-                    ImGui::SliderFloat("Absorption Green", &simData.sigma_a_.g, 0.0f, 100.0f);
-                    ImGui::SliderFloat("Absorption Blue", &simData.sigma_a_.b, 0.0f, 100.0f);
+                    GetRenderers()[simData.currentRenderer_]->DrawOptionsGUI(simData);
                     ImGui::TreePop();
                 }
 

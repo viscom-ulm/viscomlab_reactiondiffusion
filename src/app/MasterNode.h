@@ -23,6 +23,7 @@ namespace viscom {
         explicit MasterNode(ApplicationNodeInternal* appNode);
         virtual ~MasterNode() override;
 
+        virtual void InitOpenGL() override;
         virtual void PreSync() override;
         virtual void UpdateFrame(double currentTime, double elapsedTime) override;
         virtual void Draw2D(FrameBuffer& fbo) override;
@@ -55,5 +56,14 @@ namespace viscom {
         glm::vec2 currentMouseCursorPosition_ = glm::vec2{0.0f};
         /** Store tuio cursor positions. */
         std::vector<std::pair<int, glm::vec2>> tuioCursorPositions_;
+
+        /** The list of renderer names. */
+        std::vector<std::string> rendererNames_;
+        /** The list of renderer names (as c strings for imgui). */
+        std::vector<const char*> rendererNamesCStr_;
+        /** The list of preset names. */
+        std::vector<std::string> presetNames_;
+        /** The list of preset names (as c strings for imgui). */
+        std::vector<const char*> presetNamesCStr_;
     };
 }
