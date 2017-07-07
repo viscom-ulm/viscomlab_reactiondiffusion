@@ -139,10 +139,10 @@ namespace viscom {
 #ifdef WITH_TUIO
     bool MasterNode::AddTuioCursor(TUIO::TuioCursor* tcur)
     {
-        for (int i = 0; i < tuioCursorPositions_.size(); ++i) {
-            if (tuioCursorPositions_[i].first == tcur->getCursorID()) {
+        for (auto& tuioCursorPosition : tuioCursorPositions_) {
+            if (tuioCursorPosition.first == tcur->getCursorID()) {
                 LOG(WARNING) << "TUIO cursor (" << tcur->getCursorID() << ") added while already present.";
-                tuioCursorPositions_[i].second = glm::vec2(tcur->getX(), tcur->getY());
+                tuioCursorPosition.second = glm::vec2(tcur->getX(), tcur->getY());
                 return false;
             }
         }
@@ -153,9 +153,9 @@ namespace viscom {
 
     bool MasterNode::UpdateTuioCursor(TUIO::TuioCursor* tcur)
     {
-        for (int i = 0; i < tuioCursorPositions_.size(); ++i) {
-            if (tuioCursorPositions_[i].first == tcur->getCursorID()) {
-                tuioCursorPositions_[i].second = glm::vec2(tcur->getX(), tcur->getY());
+        for (auto& tuioCursorPosition : tuioCursorPositions_) {
+            if (tuioCursorPosition.first == tcur->getCursorID()) {
+                tuioCursorPosition.second = glm::vec2(tcur->getX(), tcur->getY());
                 return true;
             }
         }
