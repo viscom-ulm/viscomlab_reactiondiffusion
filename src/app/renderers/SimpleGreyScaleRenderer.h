@@ -32,9 +32,6 @@ namespace viscom::renderers {
         virtual void DrawOptionsGUI(SimulationData& simData) const override;
 
     private:
-        /** Output size of the simulation. */
-        glm::vec2 simulationOutputSize_;
-
         /** Holds the shader program for raycasting the height field back side. */
         std::shared_ptr<GPUProgram> drawGSProgram_;
         /** Holds the location of the VP matrix. */

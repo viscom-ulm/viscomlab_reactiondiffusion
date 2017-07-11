@@ -62,16 +62,14 @@ namespace viscom {
 
         auto& seed_points = GetSeedPoints();
         if (currentMouseButton_ == GLFW_MOUSE_BUTTON_1 && currentMouseAction_ == GLFW_PRESS) {
-            const float x = currentMouseCursorPosition_.x;
-            const float y = currentMouseCursorPosition_.y;
-            seed_points.emplace_back(seedIterationCount, glm::vec2(x, 1.0f - y));
+            seed_points.emplace_back(seedIterationCount, FindIntersectionWithPlane(GetPickRay(currentMouseCursorPosition_)));
         } else if (currentMouseButton_ == GLFW_MOUSE_BUTTON_2 && currentMouseAction_ == GLFW_PRESS) {
             SimulationData& sim_data = GetSimulationData();
             sim_data.resetFrameIdx_ = seedIterationCount;
         }
 
         for (const auto& tpos : tuioCursorPositions_) {
-            seed_points.emplace_back(seedIterationCount, glm::vec2(tpos.second.x, 1.0f - tpos.second.y));
+            seed_points.emplace_back(seedIterationCount, FindIntersectionWithPlane(GetPickRay(tpos.second)));
         }
 
         ApplicationNodeImplementation::UpdateFrame(currentTime, elapsedTime);
@@ -96,6 +94,11 @@ namespace viscom {
                 if (ImGui::Button("Save Preset")) SavePreset(presetName.c_str());
 
                 ImGui::Combo("Select Renderer", &simData.currentRenderer_, rendererNamesCStr_.data(), static_cast<int>(rendererNamesCStr_.size()));
+
+                if (ImGui::TreeNode("Plane Parameters")) {
+                    ImGui::SliderFloat("Draw Distance", &simData.simulationDrawDistance_, 5.0f, 20.0f);
+                    ImGui::TreePop();
+                }
 
                 if (ImGui::TreeNode("Rendering Parameters")) {
                     GetRenderers()[simData.currentRenderer_]->DrawOptionsGUI(simData);
@@ -284,5 +287,24 @@ namespace viscom {
 
         std::ofstream ofsList(presetListFile, std::ofstream::app);
         if (ofsList.good()) ofsList << presetName << " " << presetName + ".txt" << std::endl;
+    }
+
+    math::Line3<float> MasterNode::GetPickRay(const glm::vec2& globalClickCoords)
+    {
+        math::Line3<float> result;
+        result[0] = GetCamera()->GetUserPosition();
+        result[1] = result[0] + glm::normalize(glm::vec3(GetCamera()->GetPickMatrix() * glm::vec4(globalClickCoords.x, globalClickCoords.y, 0.0f, 1.0f)));
+        return result;
+    }
+
+    glm::vec2 MasterNode::FindIntersectionWithPlane(const math::Line3<float>& ray) const
+    {
+        glm::mat3 m{ 0.0f };
+        m[0] = ray[0] - ray[1];
+        m[1] = GetSimPlane().right_ - GetSimPlane().position_;
+        m[2] = GetSimPlane().up_ - GetSimPlane().position_;
+
+        auto intersection = glm::inverse(m) * (ray[0] - GetSimPlane().position_);
+        return glm::vec2(0.5f) + glm::vec2(intersection.y, intersection.z) / 2.0f;
     }
 }

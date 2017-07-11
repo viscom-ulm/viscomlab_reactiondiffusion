@@ -46,6 +46,12 @@ namespace viscom {
         int currentRenderer_ = 0;
     };
 
+    struct SimulationPlane {
+        glm::vec3 position_;
+        glm::vec3 right_;
+        glm::vec3 up_;
+    };
+
     class ApplicationNodeImplementation : public ApplicationNodeBase
     {
     public:
@@ -70,6 +76,8 @@ namespace viscom {
         const std::vector<std::unique_ptr<renderers::RDRenderer>>& GetRenderers() const { return renderers_; }
         void ResetSimulation() const;
 
+        const glm::vec2& GetSimulationOutputSize() const { return simulationOutputSize_; }
+
         /** The maximum iteration count per frame. */
         static constexpr std::uint64_t MAX_FRAME_ITERATIONS = 15;
         /** The increase in iteration count per frame. */
@@ -79,6 +87,9 @@ namespace viscom {
         static constexpr unsigned int SIMULATION_SIZE_X = 1920 / 4;
         /** The simulation frame buffer size (y). */
         static constexpr unsigned int SIMULATION_SIZE_Y = 1080 / 4;
+
+    protected:
+        const SimulationPlane& GetSimPlane() const { return simPlane_; }
 
     private:
         /** The current local iteration count. */
@@ -110,5 +121,9 @@ namespace viscom {
 
         std::vector<std::unique_ptr<renderers::RDRenderer>> renderers_;
 
+        /** Holds the simulation plane. */
+        SimulationPlane simPlane_;
+        /** Output size of the simulation. */
+        glm::vec2 simulationOutputSize_;
     };
 }

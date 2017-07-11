@@ -63,9 +63,6 @@ namespace viscom::renderers {
 
     void HeightfieldRaycaster::UpdateFrame(double, double, const SimulationData& simData, const glm::vec2& nearPlaneSize)
     {
-        float userDistance = appNode_->GetCamera()->GetUserPosition().z;
-        // TODO: maybe calculate the correct center? (ray through userPosition, (0,0,0) -> hits z=simulationDrawDistance_) [5/27/2017 Sebastian Maisch]
-        simulationOutputSize_ = nearPlaneSize * (userDistance + simData.simulationDrawDistance_) / userDistance;
     }
 
     void HeightfieldRaycaster::RenderRDResults(FrameBuffer& fbo, const SimulationData& simData, const glm::mat4& perspectiveMatrix, GLuint rdTexture)
@@ -74,7 +71,7 @@ namespace viscom::renderers {
             glBindVertexArray(simDummyVAO_);
             glUseProgram(raycastBackProgram_->getProgramId());
             glUniformMatrix4fv(raycastBackVPLoc_, 1, GL_FALSE, glm::value_ptr(perspectiveMatrix));
-            glUniform2fv(raycastBackQuadSizeLoc_, 1, glm::value_ptr(simulationOutputSize_));
+            glUniform2fv(raycastBackQuadSizeLoc_, 1, glm::value_ptr(appNode_->GetSimulationOutputSize()));
             glUniform1f(raycastBackDistanceLoc_, simData.simulationDrawDistance_);
             glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         });
@@ -84,7 +81,7 @@ namespace viscom::renderers {
             glBindVertexArray(simDummyVAO_);
             glUseProgram(raycastProgram_->getProgramId());
             glUniformMatrix4fv(raycastVPLoc_, 1, GL_FALSE, glm::value_ptr(perspectiveMatrix));
-            glUniform2fv(raycastQuadSizeLoc_, 1, glm::value_ptr(simulationOutputSize_));
+            glUniform2fv(raycastQuadSizeLoc_, 1, glm::value_ptr(appNode_->GetSimulationOutputSize()));
             glUniform1f(raycastDistanceLoc_, simData.simulationDrawDistance_ - simData.simulationHeight_);
             glUniform1f(raycastSimHeightLoc_, simData.simulationHeight_);
             glUniform3fv(raycastCamPosLoc_, 1, glm::value_ptr(camPos));
@@ -112,7 +109,6 @@ namespace viscom::renderers {
 
     void HeightfieldRaycaster::DrawOptionsGUI(SimulationData& simData) const
     {
-        ImGui::SliderFloat("Draw Distance", &simData.simulationDrawDistance_, 5.0f, 20.0f);
         ImGui::SliderFloat("Height", &simData.simulationHeight_, 0.02f, 0.5f);
         ImGui::SliderFloat("Eta", &simData.eta_, 1.0f, 5.0f);
         ImGui::SliderFloat("Absorption Red", &simData.sigma_a_.r, 0.0f, 100.0f);

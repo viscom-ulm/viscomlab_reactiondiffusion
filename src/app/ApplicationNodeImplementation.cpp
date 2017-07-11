@@ -112,6 +112,14 @@ namespace viscom {
             currentLocalIterationCount_ += iterations;
         }
 
+        float userDistance = GetCamera()->GetUserPosition().z;
+        // TODO: maybe calculate the correct center? (ray through userPosition, (0,0,0) -> hits z=simulationDrawDistance_) [5/27/2017 Sebastian Maisch]
+        simulationOutputSize_ = GetConfig().nearPlaneSize_ * (userDistance + simData_.simulationDrawDistance_) / userDistance;
+
+        simPlane_.position_ = glm::vec3(0.0f, 0.0f, -simData_.simulationDrawDistance_);
+        simPlane_.right_ = glm::vec3(simulationOutputSize_.x, 0.0f, -simData_.simulationDrawDistance_);
+        simPlane_.up_ = glm::vec3(0.0f, simulationOutputSize_.y, -simData_.simulationDrawDistance_);
+
         renderers_[simData_.currentRenderer_]->UpdateFrame(currentTime, elapsedTime, simData_, GetConfig().nearPlaneSize_);
     }
 
