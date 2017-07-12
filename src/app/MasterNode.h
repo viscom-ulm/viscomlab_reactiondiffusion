@@ -42,7 +42,6 @@ namespace viscom {
 #endif
 
     private:
-        math::Line3<float> GetPickRay(const glm::vec2& globalClickCoords);
         glm::vec2 FindIntersectionWithPlane(const math::Line3<float>& ray) const;
 
 #ifdef VISCOM_USE_SGCT

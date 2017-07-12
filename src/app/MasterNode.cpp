@@ -62,14 +62,14 @@ namespace viscom {
 
         auto& seed_points = GetSeedPoints();
         if (currentMouseButton_ == GLFW_MOUSE_BUTTON_1 && currentMouseAction_ == GLFW_PRESS) {
-            seed_points.emplace_back(seedIterationCount, FindIntersectionWithPlane(GetPickRay(currentMouseCursorPosition_)));
+            seed_points.emplace_back(seedIterationCount, FindIntersectionWithPlane(GetCamera()->GetPickRay(currentMouseCursorPosition_)));
         } else if (currentMouseButton_ == GLFW_MOUSE_BUTTON_2 && currentMouseAction_ == GLFW_PRESS) {
             SimulationData& sim_data = GetSimulationData();
             sim_data.resetFrameIdx_ = seedIterationCount;
         }
 
         for (const auto& tpos : tuioCursorPositions_) {
-            seed_points.emplace_back(seedIterationCount, FindIntersectionWithPlane(GetPickRay(tpos.second)));
+            seed_points.emplace_back(seedIterationCount, FindIntersectionWithPlane(GetCamera()->GetPickRay(tpos.second)));
         }
 
         ApplicationNodeImplementation::UpdateFrame(currentTime, elapsedTime);
@@ -287,14 +287,6 @@ namespace viscom {
 
         std::ofstream ofsList(presetListFile, std::ofstream::app);
         if (ofsList.good()) ofsList << presetName << " " << presetName + ".txt" << std::endl;
-    }
-
-    math::Line3<float> MasterNode::GetPickRay(const glm::vec2& globalClickCoords)
-    {
-        math::Line3<float> result;
-        result[0] = GetCamera()->GetUserPosition();
-        result[1] = result[0] + glm::normalize(glm::vec3(GetCamera()->GetPickMatrix() * glm::vec4(globalClickCoords.x, globalClickCoords.y, 0.0f, 1.0f)));
-        return result;
     }
 
     glm::vec2 MasterNode::FindIntersectionWithPlane(const math::Line3<float>& ray) const
