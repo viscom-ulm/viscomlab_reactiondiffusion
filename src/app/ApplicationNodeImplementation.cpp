@@ -112,7 +112,7 @@ namespace viscom {
             currentLocalIterationCount_ += iterations;
         }
 
-        float userDistance = GetCamera()->GetUserPosition().z;
+        float userDistance = (GetCamera()->GetPosition() + GetCamera()->GetUserPosition()).z;
         // TODO: maybe calculate the correct center? (ray through userPosition, (0,0,0) -> hits z=simulationDrawDistance_) [5/27/2017 Sebastian Maisch]
         simulationOutputSize_ = GetConfig().nearPlaneSize_ * (userDistance + simData_.simulationDrawDistance_) / userDistance;
 

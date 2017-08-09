@@ -62,7 +62,8 @@ namespace viscom {
 
         auto& seed_points = GetSeedPoints();
         if (currentMouseButton_ == GLFW_MOUSE_BUTTON_1 && currentMouseAction_ == GLFW_PRESS) {
-            seed_points.emplace_back(seedIterationCount, FindIntersectionWithPlane(GetCamera()->GetPickRay(currentMouseCursorPosition_)));
+            //seed_points.emplace_back(seedIterationCount, FindIntersectionWithPlane(GetCamera()->GetPickRay(currentMouseCursorPosition_)));
+            seed_points.emplace_back(seedIterationCount, FindIntersectionWithPlane(currentMouseCursorPosition_));
         } else if (currentMouseButton_ == GLFW_MOUSE_BUTTON_2 && currentMouseAction_ == GLFW_PRESS) {
             SimulationData& sim_data = GetSimulationData();
             sim_data.resetFrameIdx_ = seedIterationCount;
@@ -289,14 +290,63 @@ namespace viscom {
         if (ofsList.good()) ofsList << presetName << " " << presetName + ".txt" << std::endl;
     }
 
+    glm::vec2 MasterNode::FindIntersectionWithPlane(const glm::vec2& screenCoords)
+    {
+        auto adjScreenCoords = screenCoords;
+        adjScreenCoords.y = 1.0f - adjScreenCoords.y;
+        return FindIntersectionWithPlane(GetCamera()->GetPickRay(screenCoords));
+    }
+
     glm::vec2 MasterNode::FindIntersectionWithPlane(const math::Line3<float>& ray) const
     {
         glm::mat3 m{ 0.0f };
-        m[0] = ray[0] - ray[1];
+        m[0] = ray[1] - ray[0];
         m[1] = GetSimPlane().right_ - GetSimPlane().position_;
         m[2] = GetSimPlane().up_ - GetSimPlane().position_;
 
         auto intersection = glm::inverse(m) * (ray[0] - GetSimPlane().position_);
         return glm::vec2(0.5f) + glm::vec2(intersection.y, intersection.z) / 2.0f;
     }
+
+    void MasterNode::DrawFrame(FrameBuffer& fbo)
+    {
+        ApplicationNodeImplementation::DrawFrame(fbo);
+        /*if (lines_.empty()) return;
+
+        glDisable(GL_DEPTH_TEST);
+        fbo.DrawToFBO([this]() {
+            GLuint lineBuffer, lineArray;
+            glUseProgram(linesProgram_->getProgramId());
+
+            glGenBuffers(1, &lineBuffer);
+            glBindBuffer(GL_ARRAY_BUFFER, lineBuffer);
+            glBufferData(GL_ARRAY_BUFFER, lines_.size() * sizeof(glm::vec3), lines_.data(), GL_STREAM_DRAW);
+
+            glGenVertexArrays(1, &lineArray);
+            glBindVertexArray(lineArray);
+
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), nullptr);
+
+            glPointSize(15.0f);
+
+            glm::mat4 idMat(1.0f);
+            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(idMat));
+            glUniform3f(1, 1.0f, 0.0f, 0.0f);
+            glDrawArrays(GL_POINTS, 0, 1);
+
+            auto perspectiveMatrix = GetCamera()->GetViewPerspectiveMatrix();
+            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(perspectiveMatrix));
+            glUniform3f(1, 1.0f, 0.0f, 1.0f);
+            glDrawArrays(GL_POINTS, 1, static_cast<GLsizei>(lines_.size()));
+            glBindVertexArray(0);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+            glDeleteBuffers(1, &lineBuffer);
+            glDeleteVertexArrays(1, &lineArray);
+        });
+        glEnable(GL_DEPTH_TEST);
+        lines_.clear();*/
+    }
+
 }
