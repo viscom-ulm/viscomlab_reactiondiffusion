@@ -9,6 +9,7 @@
 #include "HeightfieldRaycaster.h"
 #include "app/ApplicationNodeImplementation.h"
 #include <imgui.h>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace viscom::renderers {
 
