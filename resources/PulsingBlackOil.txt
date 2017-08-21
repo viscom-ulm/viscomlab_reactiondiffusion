@@ -1,0 +1,14 @@
+simulationDrawDistance= 18.354
+simulationHeight= 0.077
+eta= 2.533
+sigma_a.r= 89.021
+sigma_a.g= 67.294
+sigma_a.b= 66.605
+diffusion_rate_a= 1
+diffusion_rate_b= 0.629
+feed_rate= 0.033
+kill_rate= 0.055
+dt= 1
+seed_point_radius= 0.297
+use_manhattan_distance= 1
+currentRenderer= 0
