@@ -8,6 +8,7 @@
 
 #include "SlaveNode.h"
 #include <imgui.h>
+#include "core/open_gl.h"
 
 namespace viscom {
 

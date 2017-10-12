@@ -9,6 +9,7 @@
 #include "SimpleGreyScaleRenderer.h"
 #include "app/ApplicationNodeImplementation.h"
 #include <glm/gtc/type_ptr.hpp>
+#include "core/open_gl.h"
 
 namespace viscom::renderers {
 

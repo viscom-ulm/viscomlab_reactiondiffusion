@@ -19,9 +19,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "app/renderers/HeightfieldRaycaster.h"
 #include "app/renderers/SimpleGreyScaleRenderer.h"
-
-#undef max
-#undef min
+#include "core/open_gl.h"
 
 #include <iostream>
 

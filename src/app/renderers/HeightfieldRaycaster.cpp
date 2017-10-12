@@ -10,6 +10,7 @@
 #include "app/ApplicationNodeImplementation.h"
 #include <imgui.h>
 #include <glm/gtc/type_ptr.hpp>
+#include "core/open_gl.h"
 
 namespace viscom::renderers {
 
