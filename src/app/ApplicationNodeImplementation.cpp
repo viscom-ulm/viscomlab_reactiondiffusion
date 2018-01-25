@@ -62,8 +62,8 @@ namespace viscom {
 
     void ApplicationNodeImplementation::UpdateFrame(double currentTime, double elapsedTime)
     {
-        static const std::vector<unsigned int> drawBuffers0{{0, 2}};
-        static const std::vector<unsigned int> drawBuffers1{{1, 2}};
+        static const std::vector<std::size_t> drawBuffers0{{0, 2}};
+        static const std::vector<std::size_t> drawBuffers1{{1, 2}};
 
         if (currentLocalIterationCount_ < simData_.currentGlobalIterationCount_) {
             const auto iterations = glm::min(simData_.currentGlobalIterationCount_ - currentLocalIterationCount_, MAX_FRAME_ITERATIONS);
@@ -73,7 +73,7 @@ namespace viscom {
                     ResetSimulation();
                 }
 
-                const std::vector<unsigned int>* currentDrawBuffers{nullptr};
+                const std::vector<std::size_t>* currentDrawBuffers{nullptr};
                 glActiveTexture(GL_TEXTURE0);
                 if (iterationToggle_) {
                     currentDrawBuffers = &drawBuffers0;
@@ -124,13 +124,13 @@ namespace viscom {
     void ApplicationNodeImplementation::ResetSimulation() const
     {
         // clear A and B, {0, 1}
-        reactDiffuseFBO_->DrawToFBO({0, 1}, []() {
+        reactDiffuseFBO_->DrawToFBO(std::vector<std::size_t>{0, 1}, []() {
             glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
         });
 
         // clear mixed result, {2}
-        reactDiffuseFBO_->DrawToFBO({2}, []() {
+        reactDiffuseFBO_->DrawToFBO(std::vector<std::size_t>{2}, []() {
             glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
         });

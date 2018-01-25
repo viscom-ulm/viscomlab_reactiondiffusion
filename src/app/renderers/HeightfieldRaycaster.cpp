@@ -22,11 +22,11 @@ namespace viscom::renderers {
         simulationBackFBDesc.rbDesc_.emplace_back(GL_DEPTH_COMPONENT32);
         simulationBackFBOs_ = appNode_->CreateOffscreenBuffers(simulationBackFBDesc);
 
-        raycastBackProgram_ = appNode_->GetGPUProgramManager().GetResource("raycastHeightfieldBack", std::initializer_list<std::string>{ "raycastHeightfield.vert", "raycastHeightfieldBack.frag" });
+        raycastBackProgram_ = appNode_->GetGPUProgramManager().GetResource("raycastHeightfieldBack", std::vector<std::string>{ "raycastHeightfield.vert", "raycastHeightfieldBack.frag" });
         raycastBackVPLoc_ = raycastBackProgram_->getUniformLocation("viewProjectionMatrix");
         raycastBackQuadSizeLoc_ = raycastBackProgram_->getUniformLocation("quadSize");
         raycastBackDistanceLoc_ = raycastBackProgram_->getUniformLocation("distance");
-        raycastProgram_ = appNode_->GetGPUProgramManager().GetResource("raycastHeightfield", std::initializer_list<std::string>{ "raycastHeightfield.vert", "raycastHeightfield.frag" });
+        raycastProgram_ = appNode_->GetGPUProgramManager().GetResource("raycastHeightfield", std::vector<std::string>{ "raycastHeightfield.vert", "raycastHeightfield.frag" });
         raycastVPLoc_ = raycastProgram_->getUniformLocation("viewProjectionMatrix");
         raycastQuadSizeLoc_ = raycastProgram_->getUniformLocation("quadSize");
         raycastDistanceLoc_ = raycastProgram_->getUniformLocation("distance");

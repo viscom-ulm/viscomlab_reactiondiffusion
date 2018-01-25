@@ -16,7 +16,7 @@ namespace viscom::renderers {
     SimpleGreyScaleRenderer::SimpleGreyScaleRenderer(ApplicationNodeImplementation* appNode) :
         RDRenderer{ "SimpleGreyScaleRenderer", appNode }
     {
-        drawGSProgram_ = appNode_->GetGPUProgramManager().GetResource("simpleGreyscaleRD", std::initializer_list<std::string>{ "raycastHeightfield.vert", "drawGreyscale.frag" });
+        drawGSProgram_ = appNode_->GetGPUProgramManager().GetResource("simpleGreyscaleRD", std::vector<std::string>{ "raycastHeightfield.vert", "drawGreyscale.frag" });
         drawGSVPLoc_ = drawGSProgram_->getUniformLocation("viewProjectionMatrix");
         drawGSQuadSizeLoc_ = drawGSProgram_->getUniformLocation("quadSize");
         drawGSDistanceLoc_ = drawGSProgram_->getUniformLocation("distance");
