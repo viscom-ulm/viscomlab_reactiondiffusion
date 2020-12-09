@@ -89,11 +89,6 @@ namespace viscom {
     protected:
         const SimulationPlane& GetSimPlane() const { return simPlane_; }
 
-#ifdef VISCOM_USE_SGCT
-        virtual void UpdateSyncedInfo() override;
-        void DecodeData() override;
-#endif
-
     private:
         /** The current local iteration count. */
         std::uint64_t currentLocalIterationCount_ = 0;

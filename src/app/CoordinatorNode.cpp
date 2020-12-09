@@ -19,16 +19,13 @@ namespace viscom {
     CoordinatorNode::CoordinatorNode(ApplicationNodeInternal* appNode) :
         ApplicationNodeImplementation{ appNode }
     {
-        initVr_ = InitialiseVR();
-        InitialiseDisplayVR();
+
     }
 
     CoordinatorNode::~CoordinatorNode() = default;
 
     void CoordinatorNode::InitOpenGL()
     {
-        ApplicationNodeImplementation::InitOpenGL();
-
         LoadPresetList();
 
         for (const auto& renderer : GetRenderers()) {
@@ -83,8 +80,8 @@ namespace viscom {
     void CoordinatorNode::Draw2D(FrameBuffer& fbo)
     {
         fbo.DrawToFBO([this]() {
-            ImGui::SetNextWindowSize(ImVec2(480.0f, 200.0f), ImGuiSetCond_FirstUseEver);
-            ImGui::SetNextWindowPos(ImVec2(1920.0f - 480.0f - 10.0f, 1080.0f - 200.0f - 10.0f), ImGuiSetCond_FirstUseEver);
+            ImGui::SetNextWindowSize(ImVec2(480.0f, 200.0f), ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowPos(ImVec2(1920.0f - 480.0f - 10.0f, 1080.0f - 200.0f - 10.0f), ImGuiCond_FirstUseEver);
             ImGui::StyleColorsDark();
             ImGui::Begin("Simulation Parameters");
             {

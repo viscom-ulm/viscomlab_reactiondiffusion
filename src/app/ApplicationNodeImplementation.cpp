@@ -28,14 +28,6 @@ namespace viscom {
     ApplicationNodeImplementation::ApplicationNodeImplementation(ApplicationNodeInternal* appNode) :
         ApplicationNodeBase{ appNode }
     {
-        InitialiseVR();
-        if (!InitialiseDisplayVR()) {
-            CalibrateVR(ovr::CalibrateMethod::CALIBRATE_BY_POINTING);
-        }
-
-
-    void ApplicationNodeImplementation::InitOpenGL()
-    {
         FrameBufferDescriptor reactDiffuseFBDesc;
         reactDiffuseFBDesc.texDesc_.emplace_back(GL_RG32F, GL_TEXTURE_2D);
         reactDiffuseFBDesc.texDesc_.emplace_back(GL_RG32F, GL_TEXTURE_2D);
@@ -61,6 +53,8 @@ namespace viscom {
         seed_points_.clear();
         ResetSimulation();
     }
+
+    ApplicationNodeImplementation::~ApplicationNodeImplementation() = default;
 
     void ApplicationNodeImplementation::UpdateFrame(double currentTime, double elapsedTime)
     {
