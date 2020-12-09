@@ -25,9 +25,6 @@ namespace viscom {
         virtual bool MouseButtonCallback(int button, int action) override;
         virtual bool MousePosCallback(double x, double y) override;
 
-        virtual void DrawFrame(FrameBuffer& fbo) override;
-
-
 #ifdef WITH_TUIO
         virtual bool AddTuioCursor(TUIO::TuioCursor *tcur) override;
         virtual bool UpdateTuioCursor(TUIO::TuioCursor *tcur) override;

@@ -6,6 +6,7 @@
  * @brief  Implementation of the application node class.
  */
 
+#include "core/open_gl.h"
 #include "ApplicationNodeImplementation.h"
 #include "Vertices.h"
 #include <imgui.h>
@@ -18,7 +19,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "app/renderers/HeightfieldRaycaster.h"
 #include "app/renderers/SimpleGreyScaleRenderer.h"
-#include "core/open_gl.h"
+
 
 #include <iostream>
 
@@ -27,9 +28,11 @@ namespace viscom {
     ApplicationNodeImplementation::ApplicationNodeImplementation(ApplicationNodeInternal* appNode) :
         ApplicationNodeBase{ appNode }
     {
-    }
+        InitialiseVR();
+        if (!InitialiseDisplayVR()) {
+            CalibrateVR(ovr::CalibrateMethod::CALIBRATE_BY_POINTING);
+        }
 
-    ApplicationNodeImplementation::~ApplicationNodeImplementation() = default;
 
     void ApplicationNodeImplementation::InitOpenGL()
     {

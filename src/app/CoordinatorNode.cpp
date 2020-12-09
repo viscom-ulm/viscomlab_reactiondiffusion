@@ -6,7 +6,9 @@
  * @brief  Implementation of the coordinator application node.
  */
 
+#include "core/open_gl.h"
 #include "CoordinatorNode.h"
+#include <fstream>
 #include <imgui.h>
 #include "renderers/RDRenderer.h"
 #include <fstream>
@@ -17,6 +19,8 @@ namespace viscom {
     CoordinatorNode::CoordinatorNode(ApplicationNodeInternal* appNode) :
         ApplicationNodeImplementation{ appNode }
     {
+        initVr_ = InitialiseVR();
+        InitialiseDisplayVR();
     }
 
     CoordinatorNode::~CoordinatorNode() = default;
@@ -120,7 +124,6 @@ namespace viscom {
             }
             ImGui::End();
         });
-
         ApplicationNodeImplementation::Draw2D(fbo);
     }
 
@@ -308,46 +311,4 @@ namespace viscom {
         auto intersection = glm::inverse(m) * (ray[0] - GetSimPlane().position_);
         return glm::vec2(0.5f) + glm::vec2(intersection.y, intersection.z) / 2.0f;
     }
-
-    void CoordinatorNode::DrawFrame(FrameBuffer& fbo)
-    {
-        ApplicationNodeImplementation::DrawFrame(fbo);
-        /*if (lines_.empty()) return;
-
-        glDisable(GL_DEPTH_TEST);
-        fbo.DrawToFBO([this]() {
-            GLuint lineBuffer, lineArray;
-            glUseProgram(linesProgram_->getProgramId());
-
-            glGenBuffers(1, &lineBuffer);
-            glBindBuffer(GL_ARRAY_BUFFER, lineBuffer);
-            glBufferData(GL_ARRAY_BUFFER, lines_.size() * sizeof(glm::vec3), lines_.data(), GL_STREAM_DRAW);
-
-            glGenVertexArrays(1, &lineArray);
-            glBindVertexArray(lineArray);
-
-            glEnableVertexAttribArray(0);
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), nullptr);
-
-            glPointSize(15.0f);
-
-            glm::mat4 idMat(1.0f);
-            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(idMat));
-            glUniform3f(1, 1.0f, 0.0f, 0.0f);
-            glDrawArrays(GL_POINTS, 0, 1);
-
-            auto perspectiveMatrix = GetCamera()->GetViewPerspectiveMatrix();
-            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(perspectiveMatrix));
-            glUniform3f(1, 1.0f, 0.0f, 1.0f);
-            glDrawArrays(GL_POINTS, 1, static_cast<GLsizei>(lines_.size()));
-            glBindVertexArray(0);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-            glDeleteBuffers(1, &lineBuffer);
-            glDeleteVertexArrays(1, &lineArray);
-        });
-        glEnable(GL_DEPTH_TEST);
-        lines_.clear();*/
-    }
-
 }

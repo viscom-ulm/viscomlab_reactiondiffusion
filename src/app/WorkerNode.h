@@ -30,4 +30,5 @@ namespace viscom {
         sgct::SharedVector<SeedPoint> sharedSeedPoints_;
 #endif
     };
+
 }

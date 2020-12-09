@@ -61,7 +61,6 @@ namespace viscom {
         ApplicationNodeImplementation& operator=(ApplicationNodeImplementation&&) = delete;
         virtual ~ApplicationNodeImplementation() override;
 
-        virtual void InitOpenGL() override;
         virtual void UpdateFrame(double currentTime, double elapsedTime) override;
         virtual void ClearBuffer(FrameBuffer& fbo) override;
         virtual void DrawFrame(FrameBuffer& fbo) override;
@@ -89,6 +88,11 @@ namespace viscom {
 
     protected:
         const SimulationPlane& GetSimPlane() const { return simPlane_; }
+
+#ifdef VISCOM_USE_SGCT
+        virtual void UpdateSyncedInfo() override;
+        void DecodeData() override;
+#endif
 
     private:
         /** The current local iteration count. */
