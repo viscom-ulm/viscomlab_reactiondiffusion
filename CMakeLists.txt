@@ -42,7 +42,7 @@ source_group(TREE ${PROJECT_SOURCE_DIR}/src PREFIX "src" FILES ${SRC_FILES})
 add_executable(${APP_NAME} ${SRC_FILES} ${SHADER_FILES})
 set_target_properties(${APP_NAME} PROPERTIES OUTPUT_NAME ${VISCOM_APP_NAME})
 set_property(TARGET ${APP_NAME} PROPERTY CXX_STANDARD 17)
-target_include_directories(${APP_NAME} PRIVATE src ${EXERCISE_INCLUDE_DIRS})
+target_include_directories(${APP_NAME} PRIVATE src)
 target_link_libraries(${APP_NAME} VISCOMCore)
 
 
