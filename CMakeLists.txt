@@ -19,6 +19,12 @@ set(VISCOM_INSTALL_BASE_PATH "D:/LabShare/cluster/apps/" CACHE PATH "Path to ins
 set(VISCOM_CONFIG_NAME "single" CACHE STRING "Name/directory of the configuration files to be used.")
 set(VISCOM_VIRTUAL_SCREEN_X 1920 CACHE STRING "Virtual screen size in x direction.")
 set(VISCOM_VIRTUAL_SCREEN_Y 1080 CACHE STRING "Virtual screen size in y direction.")
+set(VISCOM_CLIENTGUI OFF CACHE BOOL "Use ImGui on clients." FORCE)
+set(VISCOM_SYNCINPUT OFF CACHE BOOL "Synchronize input from master to clients." FORCE)
+set(VISCOM_CLIENTMOUSECURSOR OFF CACHE BOOL "Show the mouse cursor on clients." FORCE)
+set(VISCOM_USE_SGCT OFF CACHE BOOL "Use SGCT for local builds." FORCE)
+set(VISCOM_USE_TUIO OFF CACHE BOOL "Use TUIO input library" FORCE)
+
 
 add_subdirectory(extern/fwcore)
 
@@ -36,12 +42,20 @@ source_group(TREE ${PROJECT_SOURCE_DIR}/src PREFIX "src" FILES ${SRC_FILES})
 add_executable(${APP_NAME} ${SRC_FILES} ${SHADER_FILES})
 set_target_properties(${APP_NAME} PROPERTIES OUTPUT_NAME ${VISCOM_APP_NAME})
 set_property(TARGET ${APP_NAME} PROPERTY CXX_STANDARD 17)
-target_include_directories(${APP_NAME} PRIVATE src)
+target_include_directories(${APP_NAME} PRIVATE src ${EXERCISE_INCLUDE_DIRS})
 target_link_libraries(${APP_NAME} VISCOMCore)
+
 
 if(MSVC)
     set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${APP_NAME})
 endif()
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    target_compile_options(${APP_NAME} PRIVATE -stdlib=libc++)
+    target_link_libraries(${APP_NAME} -stdlib=libc++ c++experimental c++abi)
+    target_include_directories(${APP_NAME} SYSTEM BEFORE PRIVATE /usr/include/c++/v1)
+endif()
+
 
 set(VISCOM_CONFIG_BASE_DIR "../")
 set(VISCOM_CONFIG_PROGRAM_PROPERTIES "../config/${VISCOM_CONFIG_NAME}/propertiesPrecompute.xml")
