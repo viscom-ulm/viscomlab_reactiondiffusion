@@ -19,11 +19,6 @@ set(VISCOM_INSTALL_BASE_PATH "D:/LabShare/cluster/apps/" CACHE PATH "Path to ins
 set(VISCOM_CONFIG_NAME "single" CACHE STRING "Name/directory of the configuration files to be used.")
 set(VISCOM_VIRTUAL_SCREEN_X 1920 CACHE STRING "Virtual screen size in x direction.")
 set(VISCOM_VIRTUAL_SCREEN_Y 1080 CACHE STRING "Virtual screen size in y direction.")
-set(VISCOM_CLIENTGUI OFF CACHE BOOL "Use ImGui on clients." FORCE)
-set(VISCOM_SYNCINPUT OFF CACHE BOOL "Synchronize input from master to clients." FORCE)
-set(VISCOM_CLIENTMOUSECURSOR OFF CACHE BOOL "Show the mouse cursor on clients." FORCE)
-set(VISCOM_USE_SGCT OFF CACHE BOOL "Use SGCT for local builds." FORCE)
-set(VISCOM_USE_TUIO OFF CACHE BOOL "Use TUIO input library" FORCE)
 
 
 add_subdirectory(extern/fwcore)
