@@ -1,33 +1,27 @@
 /**
- * @file   SlaveNode.cpp
+ * @file   WorkerNode.cpp
  * @author Sebastian Maisch <sebastian.maisch@uni-ulm.de>
  * @date   2016.11.25
  *
- * @brief  Implementation of the slave application node.
+ * @brief  Implementation of the worker application node.
  */
 
-#include "SlaveNode.h"
+#include "WorkerNode.h"
 #include <imgui.h>
 #include "core/open_gl.h"
 
 namespace viscom {
 
-    SlaveNode::SlaveNode(ApplicationNodeInternal* appNode) :
-        SlaveNodeInternal{ appNode }
+    WorkerNode::WorkerNode(ApplicationNodeInternal* appNode) :
+        ApplicationNodeImplementation{ appNode }
     {
     }
 
-    SlaveNode::~SlaveNode() = default;
+    WorkerNode::~WorkerNode() = default;
 
-    void SlaveNode::Draw2D(FrameBuffer& fbo)
+    void WorkerNode::UpdateSyncedInfo()
     {
-        // always do this call last!
-        SlaveNodeInternal::Draw2D(fbo);
-    }
-
-    void SlaveNode::UpdateSyncedInfo()
-    {
-        SlaveNodeInternal::UpdateSyncedInfo();
+        ApplicationNodeImplementation::UpdateSyncedInfo();
 #ifdef VISCOM_USE_SGCT
         GetSimulationData() = sharedData_.getVal();
         auto tmpSeedPoints = sharedSeedPoints_.getVal();
@@ -43,18 +37,19 @@ namespace viscom {
     }
 
 #ifdef VISCOM_USE_SGCT
-    void SlaveNode::EncodeData()
+    void WorkerNode::EncodeData()
     {
-        SlaveNodeInternal::EncodeData();
+        ApplicationNodeImplementation::EncodeData();
         sgct::SharedData::instance()->writeObj(&sharedData_);
         sgct::SharedData::instance()->writeVector(&sharedSeedPoints_);
     }
 
-    void SlaveNode::DecodeData()
+    void WorkerNode::DecodeData()
     {
-        SlaveNodeInternal::DecodeData();
+        ApplicationNodeImplementation::DecodeData();
         sgct::SharedData::instance()->readObj(&sharedData_);
         sgct::SharedData::instance()->readVector(&sharedSeedPoints_);
     }
 #endif
+
 }

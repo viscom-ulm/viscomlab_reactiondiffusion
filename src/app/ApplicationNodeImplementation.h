@@ -3,13 +3,12 @@
  * @author Sebastian Maisch <sebastian.maisch@uni-ulm.de>
  * @date   2016.11.30
  *
- * @brief  Declaration of the application node implementation common for master and slave nodes.
+ * @brief  Declaration of the application node implementation common for coordinator and worker nodes.
  */
 
 #pragma once
 
-#include "core/ApplicationNodeInternal.h"
-#include "core/ApplicationNodeBase.h"
+#include "core/app/ApplicationNodeBase.h"
 
 namespace viscom::renderers {
     class RDRenderer;
@@ -62,7 +61,6 @@ namespace viscom {
         ApplicationNodeImplementation& operator=(ApplicationNodeImplementation&&) = delete;
         virtual ~ApplicationNodeImplementation() override;
 
-        virtual void InitOpenGL() override;
         virtual void UpdateFrame(double currentTime, double elapsedTime) override;
         virtual void ClearBuffer(FrameBuffer& fbo) override;
         virtual void DrawFrame(FrameBuffer& fbo) override;

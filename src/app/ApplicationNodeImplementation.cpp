@@ -6,12 +6,12 @@
  * @brief  Implementation of the application node class.
  */
 
+#include "core/open_gl.h"
 #include "ApplicationNodeImplementation.h"
 #include "Vertices.h"
 #include <imgui.h>
 #include "core/gfx/mesh/MeshRenderable.h"
 #include "core/gfx/FullscreenQuad.h"
-#include "core/imgui/imgui_impl_glfw_gl3.h"
 #include <iostream>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -19,7 +19,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "app/renderers/HeightfieldRaycaster.h"
 #include "app/renderers/SimpleGreyScaleRenderer.h"
-#include "core/open_gl.h"
+
 
 #include <iostream>
 
@@ -27,12 +27,6 @@ namespace viscom {
 
     ApplicationNodeImplementation::ApplicationNodeImplementation(ApplicationNodeInternal* appNode) :
         ApplicationNodeBase{ appNode }
-    {
-    }
-
-    ApplicationNodeImplementation::~ApplicationNodeImplementation() = default;
-
-    void ApplicationNodeImplementation::InitOpenGL()
     {
         FrameBufferDescriptor reactDiffuseFBDesc;
         reactDiffuseFBDesc.texDesc_.emplace_back(GL_RG32F, GL_TEXTURE_2D);
@@ -59,6 +53,8 @@ namespace viscom {
         seed_points_.clear();
         ResetSimulation();
     }
+
+    ApplicationNodeImplementation::~ApplicationNodeImplementation() = default;
 
     void ApplicationNodeImplementation::UpdateFrame(double currentTime, double elapsedTime)
     {
@@ -114,9 +110,9 @@ namespace viscom {
         // TODO: maybe calculate the correct center? (ray through userPosition, (0,0,0) -> hits z=simulationDrawDistance_) [5/27/2017 Sebastian Maisch]
         simulationOutputSize_ = GetConfig().nearPlaneSize_ * (userDistance + simData_.simulationDrawDistance_) / userDistance;
 
-        simPlane_.position_ = glm::vec3(0.0f, 0.0f, -simData_.simulationDrawDistance_);
-        simPlane_.right_ = glm::vec3(simulationOutputSize_.x, 0.0f, -simData_.simulationDrawDistance_);
-        simPlane_.up_ = glm::vec3(0.0f, simulationOutputSize_.y, -simData_.simulationDrawDistance_);
+        simPlane_.position_ = glm::vec3(0.0f, 0.0f, simData_.simulationDrawDistance_);
+        simPlane_.right_ = glm::vec3(simulationOutputSize_.x, 0.0f, simData_.simulationDrawDistance_);
+        simPlane_.up_ = glm::vec3(0.0f, simulationOutputSize_.y, simData_.simulationDrawDistance_);
 
         renderers_[simData_.currentRenderer_]->UpdateFrame(currentTime, elapsedTime, simData_, GetConfig().nearPlaneSize_);
     }

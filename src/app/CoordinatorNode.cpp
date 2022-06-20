@@ -1,31 +1,31 @@
 /**
- * @file   MasterNode.cpp
+ * @file   CoordinatorNode.cpp
  * @author Sebastian Maisch <sebastian.maisch@uni-ulm.de>
  * @date   2016.11.25
  *
- * @brief  Implementation of the master application node.
+ * @brief  Implementation of the coordinator application node.
  */
 
-#include "MasterNode.h"
+#include "core/open_gl.h"
+#include "CoordinatorNode.h"
+#include <fstream>
 #include <imgui.h>
-#include "core/imgui/imgui_impl_glfw_gl3.h"
 #include "renderers/RDRenderer.h"
 #include <fstream>
 #include "core/open_gl.h"
 
 namespace viscom {
 
-    MasterNode::MasterNode(ApplicationNodeInternal* appNode) :
+    CoordinatorNode::CoordinatorNode(ApplicationNodeInternal* appNode) :
         ApplicationNodeImplementation{ appNode }
     {
+
     }
 
-    MasterNode::~MasterNode() = default;
+    CoordinatorNode::~CoordinatorNode() = default;
 
-    void MasterNode::InitOpenGL()
+    void CoordinatorNode::InitOpenGL()
     {
-        ApplicationNodeImplementation::InitOpenGL();
-
         LoadPresetList();
 
         for (const auto& renderer : GetRenderers()) {
@@ -37,7 +37,7 @@ namespace viscom {
         }
     }
 
-    void MasterNode::PreSync()
+    void CoordinatorNode::PreSync()
     {
         ApplicationNodeImplementation::PreSync();
 #ifdef VISCOM_USE_SGCT
@@ -56,7 +56,7 @@ namespace viscom {
         }
     }
 
-    void MasterNode::UpdateFrame(double currentTime, double elapsedTime)
+    void CoordinatorNode::UpdateFrame(double currentTime, double elapsedTime)
     {
         auto seedIterationCount = GetSimulationData().currentGlobalIterationCount_ + 1;
         GetSimulationData().currentGlobalIterationCount_ += ApplicationNodeImplementation::FRAME_ITERATIONS_INC;
@@ -77,11 +77,12 @@ namespace viscom {
         ApplicationNodeImplementation::UpdateFrame(currentTime, elapsedTime);
     }
 
-    void MasterNode::Draw2D(FrameBuffer& fbo)
+    void CoordinatorNode::Draw2D(FrameBuffer& fbo)
     {
         fbo.DrawToFBO([this]() {
-            ImGui::SetNextWindowSize(ImVec2(480.0f, 200.0f), ImGuiSetCond_FirstUseEver);
-            ImGui::SetNextWindowPos(ImVec2(1920.0f - 480.0f - 10.0f, 1080.0f - 200.0f - 10.0f), ImGuiSetCond_FirstUseEver);
+            ImGui::SetNextWindowSize(ImVec2(480.0f, 200.0f), ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowPos(ImVec2(1920.0f - 480.0f - 10.0f, 1080.0f - 200.0f - 10.0f), ImGuiCond_FirstUseEver);
+            ImGui::StyleColorsDark();
             ImGui::Begin("Simulation Parameters");
             {
                 SimulationData& simData = GetSimulationData();
@@ -120,11 +121,10 @@ namespace viscom {
             }
             ImGui::End();
         });
-
         ApplicationNodeImplementation::Draw2D(fbo);
     }
 
-    bool MasterNode::MouseButtonCallback(int button, int action)
+    bool CoordinatorNode::MouseButtonCallback(int button, int action)
     {
         if (!ApplicationNodeImplementation::MouseButtonCallback(button, action)) {
             currentMouseAction_ = action;
@@ -133,7 +133,7 @@ namespace viscom {
         return true;
     }
 
-    bool MasterNode::MousePosCallback(double x, double y)
+    bool CoordinatorNode::MousePosCallback(double x, double y)
     {
         if (!ApplicationNodeImplementation::MousePosCallback(x, y)) {
             currentMouseCursorPosition_ = glm::vec2{x, y};
@@ -142,7 +142,7 @@ namespace viscom {
     }
 
 #ifdef WITH_TUIO
-    bool MasterNode::AddTuioCursor(TUIO::TuioCursor* tcur)
+    bool CoordinatorNode::AddTuioCursor(TUIO::TuioCursor* tcur)
     {
         for (auto& tuioCursorPosition : tuioCursorPositions_) {
             if (tuioCursorPosition.first == tcur->getCursorID()) {
@@ -156,7 +156,7 @@ namespace viscom {
         return true;
     }
 
-    bool MasterNode::UpdateTuioCursor(TUIO::TuioCursor* tcur)
+    bool CoordinatorNode::UpdateTuioCursor(TUIO::TuioCursor* tcur)
     {
         for (auto& tuioCursorPosition : tuioCursorPositions_) {
             if (tuioCursorPosition.first == tcur->getCursorID()) {
@@ -169,7 +169,7 @@ namespace viscom {
         return false;
     }
 
-    bool MasterNode::RemoveTuioCursor(TUIO::TuioCursor* tcur)
+    bool CoordinatorNode::RemoveTuioCursor(TUIO::TuioCursor* tcur)
     {
         int localId = -1;
         for (int i = 0; i < tuioCursorPositions_.size(); ++i) {
@@ -191,7 +191,7 @@ namespace viscom {
 #endif
 
 #ifdef VISCOM_USE_SGCT
-    void MasterNode::EncodeData()
+    void CoordinatorNode::EncodeData()
     {
         ApplicationNodeImplementation::EncodeData();
         sgct::SharedData::instance()->writeObj(&sharedData_);
@@ -199,7 +199,7 @@ namespace viscom {
         syncedTimestamp_.setVal(sharedData_.getVal().currentGlobalIterationCount_);
     }
 
-    void MasterNode::DecodeData()
+    void CoordinatorNode::DecodeData()
     {
         ApplicationNodeImplementation::DecodeData();
         sgct::SharedData::instance()->readObj(&sharedData_);
@@ -207,7 +207,7 @@ namespace viscom {
     }
 #endif
 
-    void MasterNode::LoadPresetList()
+    void CoordinatorNode::LoadPresetList()
     {
         presetNames_.emplace_back("None", "");
 
@@ -226,7 +226,7 @@ namespace viscom {
         UpdatePresetNames();
     }
 
-    void MasterNode::UpdatePresetNames()
+    void CoordinatorNode::UpdatePresetNames()
     {
         presetNamesCStr_.clear();
         for (const auto& pName : presetNames_) {
@@ -234,7 +234,7 @@ namespace viscom {
         }
     }
 
-    void MasterNode::LoadPreset(int preset)
+    void CoordinatorNode::LoadPreset(int preset)
     {
         if (preset == 0) return;
 
@@ -262,7 +262,7 @@ namespace viscom {
         }
     }
 
-    void MasterNode::SavePreset(const std::string& presetName)
+    void CoordinatorNode::SavePreset(const std::string& presetName)
     {
         std::string presetFile = GetConfig().resourceSearchPaths_.back() + "/" + presetName + ".txt";
         std::ofstream ofs(presetFile, std::ofstream::trunc);
@@ -291,14 +291,14 @@ namespace viscom {
         if (ofsList.good()) ofsList << presetName << " " << presetName + ".txt" << std::endl;
     }
 
-    glm::vec2 MasterNode::FindIntersectionWithPlane(const glm::vec2& screenCoords)
+    glm::vec2 CoordinatorNode::FindIntersectionWithPlane(const glm::vec2& screenCoords)
     {
         auto adjScreenCoords = screenCoords;
         adjScreenCoords.y = 1.0f - adjScreenCoords.y;
         return FindIntersectionWithPlane(GetCamera()->GetPickRay(screenCoords));
     }
 
-    glm::vec2 MasterNode::FindIntersectionWithPlane(const math::Line3<float>& ray) const
+    glm::vec2 CoordinatorNode::FindIntersectionWithPlane(const math::Line3<float>& ray) const
     {
         glm::mat3 m{ 0.0f };
         m[0] = ray[1] - ray[0];
@@ -308,46 +308,4 @@ namespace viscom {
         auto intersection = glm::inverse(m) * (ray[0] - GetSimPlane().position_);
         return glm::vec2(0.5f) + glm::vec2(intersection.y, intersection.z) / 2.0f;
     }
-
-    void MasterNode::DrawFrame(FrameBuffer& fbo)
-    {
-        ApplicationNodeImplementation::DrawFrame(fbo);
-        /*if (lines_.empty()) return;
-
-        glDisable(GL_DEPTH_TEST);
-        fbo.DrawToFBO([this]() {
-            GLuint lineBuffer, lineArray;
-            glUseProgram(linesProgram_->getProgramId());
-
-            glGenBuffers(1, &lineBuffer);
-            glBindBuffer(GL_ARRAY_BUFFER, lineBuffer);
-            glBufferData(GL_ARRAY_BUFFER, lines_.size() * sizeof(glm::vec3), lines_.data(), GL_STREAM_DRAW);
-
-            glGenVertexArrays(1, &lineArray);
-            glBindVertexArray(lineArray);
-
-            glEnableVertexAttribArray(0);
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), nullptr);
-
-            glPointSize(15.0f);
-
-            glm::mat4 idMat(1.0f);
-            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(idMat));
-            glUniform3f(1, 1.0f, 0.0f, 0.0f);
-            glDrawArrays(GL_POINTS, 0, 1);
-
-            auto perspectiveMatrix = GetCamera()->GetViewPerspectiveMatrix();
-            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(perspectiveMatrix));
-            glUniform3f(1, 1.0f, 0.0f, 1.0f);
-            glDrawArrays(GL_POINTS, 1, static_cast<GLsizei>(lines_.size()));
-            glBindVertexArray(0);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-            glDeleteBuffers(1, &lineBuffer);
-            glDeleteVertexArrays(1, &lineArray);
-        });
-        glEnable(GL_DEPTH_TEST);
-        lines_.clear();*/
-    }
-
 }
